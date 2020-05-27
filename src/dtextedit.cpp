@@ -27,7 +27,6 @@
 #include "widgets/bottombar.h"
 #include "leftareaoftextedit.h"
 #include "bookmarkwidget.h"
-#include "codeflodarea.h"
 
 #include <KF5/KSyntaxHighlighting/definition.h>
 #include <KF5/KSyntaxHighlighting/syntaxhighlighter.h>
@@ -55,11 +54,6 @@
 #include <private/qguiapplication_p.h>
 #include <qpa/qplatformtheme.h>
 
-#define STYLE_COLOR_1 "#FFA503"
-#define STYLE_COLOR_2 "#FF1C49"
-#define STYLE_COLOR_3 "#9023FC"
-#define STYLE_COLOR_4 "#05EA6B"
-
 static inline bool isModifier(QKeyEvent *e)
 {
     if (!e) {
@@ -82,7 +76,6 @@ TextEdit::TextEdit(QWidget *parent)
       m_wrapper(nullptr),
      m_highlighter(new KSyntaxHighlighting::SyntaxHighlighter(document()))
 {
-    m_bIsFileOpen = false;
     //lineNumberArea = new LineNumberArea(m_pLeftAreaWidget);
     m_pLeftAreaWidget = new leftareaoftextedit(this);
     lineNumberArea = m_pLeftAreaWidget->m_linenumberarea;
@@ -96,7 +89,6 @@ TextEdit::TextEdit(QWidget *parent)
 
     viewport()->installEventFilter(this);
     m_pLeftAreaWidget->m_bookMarkArea->installEventFilter(this);
-    m_pLeftAreaWidget->m_flodArea->installEventFilter(this);
     viewport()->setCursor(Qt::IBeamCursor);
 
     // Don't draw frame around editor widget.
@@ -142,57 +134,6 @@ TextEdit::TextEdit(QWidget *parent)
     m_preBookMarkAction = new QAction(tr("Previous bookmark"),this);
     m_nextBookMarkAction = new QAction(tr("Next bookmark"),this);
     m_clearBookMarkAction = new QAction(tr("Clear bookmark"),this);
-    m_flodAllLevel = new QAction(tr("Flod all Level"), this);
-    m_flodCurrentLevel = new QAction(tr("Flod current Level"), this);
-    m_unflodAllLevel = new QAction(tr("Unflod all Level"), this);
-    m_unflodCurrentLevel = new QAction(tr("Unflod Current Level"), this);
-
-//    setAddRigetMenu();
-    //yanyuhan
-    //颜色标记、折叠/展开、书签、列编辑、设置注释、取消注释;
-    //点击颜色标记菜单，显示二级菜单，包括：标记所在行、清除上次标记、清除标记、标记所有;
-    m_colorMarkMenu = new DMenu(tr("Color Mark"),this);
-    m_markAllLine = new DMenu(tr("Mark All Line"), this);
-    m_markCurrentLine = new DMenu(tr("Mark Current Line"), this);
-    m_cancleMarkAllLine = new QAction(tr("Cancle Mark All Line"), this);
-    m_cancleMarkCurrentLine = new QAction(tr("Cancle Mark Current Line"), this);
-    m_cancleLastMark = new QAction(tr("Cancle last Mark"), this);
-
-    m_actionStyleOne = new QAction(tr("Style One"), this);
-    m_actionStyleTwo = new QAction(tr("Style Two"), this);
-    m_actionStyleThree = new QAction(tr("Style Three"), this);
-    m_actionStyleFour = new QAction(tr("Style Four"), this);
-
-    m_actionAllStyleOne = new QAction(tr("Style One"), this);
-    m_actionAllStyleTwo = new QAction(tr("Style Two"), this);
-    m_actionAllStyleThree = new QAction(tr("Style Three"), this);
-    m_actionAllStyleFour = new QAction(tr("Style Four"), this);
-
-    m_markAllLine->addAction(m_actionAllStyleOne);
-    m_markAllLine->addAction(m_actionAllStyleTwo);
-    m_markAllLine->addAction(m_actionAllStyleThree);
-    m_markAllLine->addAction(m_actionAllStyleFour);
-
-    m_markCurrentLine->addAction(m_actionStyleOne);
-    m_markCurrentLine->addAction(m_actionStyleTwo);
-    m_markCurrentLine->addAction(m_actionStyleThree);
-    m_markCurrentLine->addAction(m_actionStyleFour);
-
-    //点击折叠/展开菜单，显示二级菜单;包括：折叠所有层次、展开所有层次、折叠当前层次、展开当前层次。
-    m_collapseExpandMenu = new DMenu(tr("Collapse/Expand"),this);
-    QAction *collapseAll = new QAction(tr("Collapse all"));
-    QAction *expandAll = new QAction(tr("Expand all"));
-    QAction *collapseThis = new QAction(tr("Collapse this"));
-    QAction *expandThis = new QAction(tr("Expand this"));
-    m_collapseExpandMenu->addAction(collapseAll);
-    m_collapseExpandMenu->addAction(expandAll);
-    m_collapseExpandMenu->addAction(collapseThis);
-    m_collapseExpandMenu->addAction(expandThis);
-
-    m_columnEditACtion = new QAction(tr("Column edit"),this);
-    m_columnEditACtion->setCheckable(true);
-    m_addComment = new QAction(tr("Add comment"),this);
-    m_cancelComment = new QAction(tr("Cancel comment"),this);
 
     connect(m_rightMenu, &DMenu::aboutToHide, this, &TextEdit::removeHighlightWordUnderCursor);
     connect(m_undoAction, &QAction::triggered, this, &TextEdit::undo);
@@ -210,13 +151,7 @@ TextEdit::TextEdit(QWidget *parent)
     connect(m_enableReadOnlyModeAction, &QAction::triggered, this, &TextEdit::toggleReadOnlyMode);
     connect(m_disableReadOnlyModeAction, &QAction::triggered, this, &TextEdit::toggleReadOnlyMode);
     connect(m_openInFileManagerAction, &QAction::triggered, this, &TextEdit::clickOpenInFileManagerAction);
- //   connect(m_toggleCommentAction, &QAction::triggered, this, &TextEdit::toggleComment);
-    connect(m_addComment,&QAction::triggered,this,[=] {
-        toggleComment(true);
-    });
-    connect(m_cancelComment,&QAction::triggered,this,[=] {
-        toggleComment(false);
-    });
+    connect(m_toggleCommentAction, &QAction::triggered, this, &TextEdit::toggleComment);
     connect(m_voiceReadingAction, &QAction::triggered, this, &TextEdit::slot_voiceReading);
     connect(m_stopReadingAction, &QAction::triggered, this, &TextEdit::slot_stopReading);
     connect(m_dictationAction, &QAction::triggered, this, &TextEdit::slot_dictation);
@@ -226,59 +161,6 @@ TextEdit::TextEdit(QWidget *parent)
     connect(m_preBookMarkAction, &QAction::triggered, this, &TextEdit::onMoveToPreviousBookMark);
     connect(m_nextBookMarkAction, &QAction::triggered, this, &TextEdit::onMoveToNextBookMark);
     connect(m_clearBookMarkAction, &QAction::triggered, this, &TextEdit::onClearBookMark);
-    connect(m_flodAllLevel, &QAction::triggered, this, [ = ] {
-        flodOrUnflodAllLevel(true);
-    });
-    connect(m_unflodAllLevel, &QAction::triggered, this, [ = ] {
-        flodOrUnflodAllLevel(false);
-    });
-    connect(m_flodCurrentLevel, &QAction::triggered, this, [ = ] {
-        flodOrUnflodCurrentLevel(true);
-    });
-    connect(m_unflodCurrentLevel, &QAction::triggered, this, [ = ] {
-        flodOrUnflodCurrentLevel(false);
-    });
-    connect(m_markCurrentLine, &DMenu::triggered, this, [ = ](QAction * pAction) {
-        QString strColor;
-        if (pAction == m_actionStyleOne) {
-            strColor = STYLE_COLOR_1;
-        } else if (pAction == m_actionStyleTwo) {
-            strColor = STYLE_COLOR_2;
-        } else if (pAction == m_actionStyleThree) {
-            strColor = STYLE_COLOR_3;
-        } else if (pAction == m_actionStyleFour) {
-            strColor = STYLE_COLOR_4;
-        }
-        isMarkCurrentLine(true, strColor);
-        renderAllSelections();
-    });
-    connect(m_cancleMarkCurrentLine, &QAction::triggered, this, [ = ] {
-        isMarkCurrentLine(false);
-        renderAllSelections();
-    });
-
-    connect(m_markAllLine, &DMenu::triggered, this, [ = ](QAction * pAction) {
-        QString strColor;
-        if (pAction == m_actionAllStyleOne) {
-            strColor = STYLE_COLOR_1;
-        } else if (pAction == m_actionAllStyleTwo) {
-            strColor = STYLE_COLOR_2;
-        } else if (pAction == m_actionAllStyleThree) {
-            strColor = STYLE_COLOR_3;
-        } else if (pAction == m_actionAllStyleFour) {
-            strColor = STYLE_COLOR_4;
-        }
-        isMarkAllLine(true, strColor);
-        renderAllSelections();
-    });
-    connect(m_cancleMarkAllLine, &QAction::triggered, this, [ = ] {
-        isMarkAllLine(false);
-        renderAllSelections();
-    });
-    connect(m_cancleLastMark, &QAction::triggered, this, [ = ] {
-        cancleLastMark();
-        renderAllSelections();
-    });
 
 
     // Init convert case sub menu.
@@ -379,11 +261,6 @@ TextEdit::TextEdit(QWidget *parent)
         m_highlighter->setDefinition(def);
         emit hightlightChanged(action->text());
     });
-}
-
-TextEdit::~TextEdit()
-{
-    writeHistoryRecord();
 }
 
 void TextEdit::setWrapper(EditWrapper *w)
@@ -1399,11 +1276,7 @@ void TextEdit::scrollToLine(int scrollOffset, int row, int column)
 
 void TextEdit::setLineWrapMode(bool enable)
 {
-    this->setWordWrapMode(QTextOption::WrapAnywhere);
     QTextEdit::setLineWrapMode(enable ? QTextEdit::WidgetWidth : QTextEdit::NoWrap);
-    m_pLeftAreaWidget->m_linenumberarea->update();
-    m_pLeftAreaWidget->m_flodArea->update();
-    m_pLeftAreaWidget->m_bookMarkArea->update();
 }
 
 void TextEdit::setFontFamily(QString name)
@@ -1656,21 +1529,18 @@ bool TextEdit::updateKeywordSelections(QString keyword)
 void TextEdit::renderAllSelections()
 {
     QList<QTextEdit::ExtraSelection> selections;
-//    setExtraSelections(selections);
 
 //    for (auto findMatch : m_findMatchSelections) {
 //        findMatch.format = m_findMatchFormat;
 //        selections.append(findMatch);
 //    }
+
     selections.append(m_currentLineSelection);
-    selections.append(m_markAllSelection);
-    selections.append(m_wordMarkSelections);
     selections.append(m_findMatchSelections);
     selections.append(m_findHighlightSelection);
-    selections.append(m_wordUnderCursorSelection);
+    //selections.append(m_wordUnderCursorSelection);
     selections.append(m_beginBracketSelection);
     selections.append(m_endBracketSelection);
-//    selections.append(m_markAllSelection);
 
     setExtraSelections(selections);
 }
@@ -1699,12 +1569,7 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
     painter.fillRect(event->rect(), lineNumberAreaBackgroundColor);
 
     int blockNumber = getFirstVisibleBlockId();
-    if(blockNumber > 0) {        //多绘制上面一行的行号
-        blockNumber--;
-    }
-//    blockNumber = 0;
     QTextBlock block = document()->findBlockByNumber(blockNumber);
-
     QTextBlock prev_block = (blockNumber > 0) ? document()->findBlockByNumber(blockNumber-1) : block;
     int translate_y = (blockNumber > 0) ? -verticalScrollBar()->sliderPosition() : 0;
 
@@ -1713,29 +1578,18 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
     // Adjust text position according to the previous "non entirely visible" block
     // if applicable. Also takes in consideration the document's margin offset.
     int additional_margin;
-    if (blockNumber == 0) {
+    if (blockNumber == 0)
         // Simply adjust to document's margin
-  //      additional_margin = document()->documentMargin() -1 - this->verticalScrollBar()->sliderPosition();
-        additional_margin = document()->documentMargin() - this->verticalScrollBar()->sliderPosition();
-    }
-    else {
+        additional_margin = document()->documentMargin() -1 - this->verticalScrollBar()->sliderPosition();
+    else
         // Getting the height of the visible part of the previous "non entirely visible" block
-//        additional_margin = document()->documentLayout()->blockBoundingRect(prev_block).toRect()
-//                .translated(0, translate_y).intersected(this->viewport()->geometry()).height();
-        additional_margin = document()->documentLayout()->blockBoundingRect(prev_block).toRect()
-                .translated(0, translate_y).bottom();          //不比较，直接从上一行的底边开始绘制，即多绘制一行的行号
-    }
+        additional_margin = document()->documentLayout()->blockBoundingRect(prev_block)
+                .translated(0, translate_y).intersected(this->viewport()->geometry()).height();
 
     // Shift the starting point
-    //additional_margin -= 2;
-
     top += additional_margin;
 
     int bottom = top + document()->documentLayout()->blockBoundingRect(block).height();
-
-
-//    int bottom1 = top + document()->documentLayout()->blockBoundingRect(block).toRect().height();
-//    qDebug()<<"bottom1 = "<<bottom1;
 
     Utils::setFontSize(painter, document()->defaultFont().pointSize() - 2);
     // Draw the numbers (displaying the current line number in green)
@@ -1749,19 +1603,9 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 
             m_fontLineNumberArea.setPointSize(currentFont().pointSize() - 1);
             painter.setFont(m_fontLineNumberArea);
-
-            if (fontMetrics().height() *1.5 > document()->documentLayout()->blockBoundingRect(block).height()
-                    && document()->documentLayout()->blockBoundingRect(block).height() > fontMetrics().height()) {
-
-                painter.drawText(0, top,
-                                 lineNumberArea->width(), document()->documentLayout()->blockBoundingRect(block).height(),
-                                 Qt::AlignVCenter | Qt::AlignHCenter, QString::number(blockNumber + 1));
-                qDebug() << ".........." << document()->documentLayout()->blockBoundingRect(block).width();
-            } else {
-                painter.drawText(0, top,
-                                 lineNumberArea->width(), document()->documentLayout()->blockBoundingRect(block).height(),
-                                 /*Qt::AlignVCenter |*/ Qt::AlignHCenter, QString::number(blockNumber + 1));
-            }
+            painter.drawText(0, top,
+                             lineNumberArea->width(), document()->documentLayout()->blockBoundingRect(block).height(),
+                             Qt::AlignVCenter | Qt::AlignHCenter, QString::number(blockNumber + 1));
         }
 
         block = block.next();
@@ -1769,112 +1613,6 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
         bottom = top + document()->documentLayout()->blockBoundingRect(block).height();
         ++blockNumber;
     }
-}
-
-void TextEdit::codeFLodAreaPaintEvent(QPaintEvent *event)
-{
-    m_listFlodFlag.clear();
-    m_listFlodIconPos.clear();
-    QPainter painter(m_pLeftAreaWidget->m_flodArea);
-
-    QColor codeFlodAreaBackgroundColor;
-    if (QColor(m_backgroundColor).lightness() < 128) {
-        codeFlodAreaBackgroundColor = palette().brightText().color();
-        codeFlodAreaBackgroundColor.setAlphaF(0.01);
-
-        m_lineNumbersColor.setAlphaF(0.2);
-    } else {
-        codeFlodAreaBackgroundColor = palette().brightText().color();
-        codeFlodAreaBackgroundColor.setAlphaF(0.03);
-        m_lineNumbersColor.setAlphaF(0.3);
-    }
-    painter.fillRect(event->rect(), codeFlodAreaBackgroundColor);
-
-
-
-    int blockNumber = getFirstVisibleBlockId();
-    QTextBlock block = document()->findBlockByNumber(blockNumber);
-    QTextBlock prev_block = (blockNumber > 0) ? document()->findBlockByNumber(blockNumber - 1) : block;
-    int translate_y = (blockNumber > 0) ? -verticalScrollBar()->sliderPosition() : 0;
-
-    int top = this->viewport()->geometry().top();
-    int additional_margin;
-    if (blockNumber == 0)
-        // Simply adjust to document's margin
-   //     additional_margin = document()->documentMargin() - 1 - this->verticalScrollBar()->sliderPosition();
-        additional_margin = document()->documentMargin() - this->verticalScrollBar()->sliderPosition();
-    else
-        // Getting the height of the visible part of the previous "non entirely visible" block
-        additional_margin = document()->documentLayout()->blockBoundingRect(prev_block).toRect()
-                            .translated(0, translate_y).intersected(this->viewport()->geometry()).height();
-
-    // Shift the starting point
-    additional_margin += 3;
-    top += additional_margin;
-
-    DGuiApplicationHelper *guiAppHelp = DGuiApplicationHelper::instance();
-
-    QString theme  = "";
-    if (guiAppHelp->themeType() == DGuiApplicationHelper::ColorType::DarkType) {  //暗色主题
-        theme = "d";
-    } else {  //浅色主题
-        theme = "l";
-    }
-    QString unflodImagePath = ":/images/d-" + theme + ".svg";
-    QString flodImagePath = ":/images/u-" + theme + ".svg";
-    QImage Unfoldimage(unflodImagePath);
-    QImage foldimage(flodImagePath);
-    int bottom = top + document()->documentLayout()->blockBoundingRect(block).height();
-    while (block.isValid() && top <= event->rect().bottom()) {
-        if (/*block.isVisible() && */bottom >= event->rect().top()) {
-            if (document()->findBlockByNumber(blockNumber).text().contains("{")) {
-                if (document()->findBlockByNumber(blockNumber).text().trimmed().startsWith("{")) {
-                    if (document()->findBlockByNumber(blockNumber).isVisible()) {
-                        painter.drawImage(0, top - document()->documentLayout()->blockBoundingRect(block).height(), foldimage);
-                    } else {
-                        painter.drawImage(0, top - document()->documentLayout()->blockBoundingRect(block.previous()).height(), Unfoldimage);
-                    }
-                    m_listFlodFlag.push_back(blockNumber);
-                    m_listFlodIconPos.append(blockNumber - 1);
-                } else {
-                    if (document()->findBlockByNumber(blockNumber + 1).isVisible()) {
-                        painter.drawImage(0, top, foldimage);
-                    } else {
-                        painter.drawImage(0, top, Unfoldimage);
-                    }
-                    m_listFlodIconPos.append(blockNumber);
-                }
-
-            }
-        }
-
-        block = block.next();
-        top = bottom;
-        bottom = top + document()->documentLayout()->blockBoundingRect(block).height();
-        ++blockNumber;
-    }
-
-}
-
-void TextEdit::setCodeFlodFlagVisable(bool isVisable,bool bIsFirstOpen)
-{
-   int leftAreaWidth = m_pLeftAreaWidget->width();
-   int flodAreaWidth = m_pLeftAreaWidget->m_flodArea->width();
-//    qDebug()<<"leftAreaWidth = "<<leftAreaWidth;
-//    qDebug()<<"flodAreaWidth = "<<flodAreaWidth;
-    if(!bIsFirstOpen) {
-       if(isVisable) {
-           m_pLeftAreaWidget->setFixedWidth(leftAreaWidth+flodAreaWidth);
-//            qDebug()<<"isVisable = "<<isVisable;
-//            qDebug()<<"-----------------------leftAreaWidth = "<<m_pLeftAreaWidget->width();
-       } else {
-           m_pLeftAreaWidget->setFixedWidth(leftAreaWidth - flodAreaWidth);
-//            qDebug()<<"isVisable = "<<isVisable;
-//            qDebug()<<"-----------------------leftAreaWidth = "<<m_pLeftAreaWidget->width();
-       }
-    }
-    m_pIsShowCodeFoldArea = isVisable;
-    m_pLeftAreaWidget->m_flodArea->setVisible(isVisable);
 }
 
 void TextEdit::updateLineNumber()
@@ -1891,6 +1629,7 @@ void TextEdit::updateLineNumber()
             }
 
             foreach (auto line, m_listBookmark) {
+                qDebug() << line << nAddorDeleteLine;
                 if (nAddorDeleteLine < line) {
                     m_listBookmark.replace(m_listBookmark.indexOf(line),line - 1);
                 }
@@ -1899,6 +1638,7 @@ void TextEdit::updateLineNumber()
             nAddorDeleteLine = cursor.blockNumber();
 
             foreach (auto line, m_listBookmark) {
+                qDebug() << line << nAddorDeleteLine;
                 if (nAddorDeleteLine < line) {
                     m_listBookmark.replace(m_listBookmark.indexOf(line),line + 1);
                 }
@@ -1910,19 +1650,10 @@ void TextEdit::updateLineNumber()
 
     int blockSize = QString::number(blockCount()).size();
 
-//    m_pLeftAreaWidget->setFixedWidth(23 + blockSize * fontMetrics().width('9') + m_lineNumberPaddingX * 4);
-
-//    m_pLeftAreaWidget->setFixedWidth(blockSize * fontMetrics().width('9') + m_lineNumberPaddingX * 4);
-
-    if(m_pIsShowCodeFoldArea) {
-        m_pLeftAreaWidget->setFixedWidth(23 + blockSize * fontMetrics().width('9') + m_lineNumberPaddingX * 4);
-    } else {
-        m_pLeftAreaWidget->setFixedWidth(blockSize * fontMetrics().width('9') + m_lineNumberPaddingX * 4);
-    }
+    m_pLeftAreaWidget->setFixedWidth(23 + blockSize * fontMetrics().width('9') + m_lineNumberPaddingX * 4);
 
     m_pLeftAreaWidget->m_bookMarkArea->update();
     lineNumberArea->update();
-    m_pLeftAreaWidget->m_flodArea->update();
 }
 
 void TextEdit::updateWordCount()
@@ -2103,63 +1834,14 @@ int TextEdit::getFirstVisibleBlockId() const
                     this->viewport()->geometry().x(), this->viewport()->geometry().y() - (
                         this->verticalScrollBar()->sliderPosition())).toRect();
 
-        r2.setWidth(0);        //只通过高度判断是否包含在当前界面
         if (r1.contains(r2, true)) {
             return i;
         }
+
         curs.movePosition(QTextCursor::NextBlock);
     }
 
     return 0;
-}
-
-void TextEdit::getNeedControlLine(int line, bool isVisable)
-{
-    int iLine = line;
-    bool isFirstLine = true;
-    QTextBlock block = document()->findBlockByNumber(iLine);
-    int existLeftSubbrackets = 0, existRightSubbrackets = 0;
-
-    while (block.isValid()) {
-
-        if (block.text().contains("{") && !block.text().contains("}")) {
-            existLeftSubbrackets ++;
-        } else if (block.text().contains("}") && !block.text().contains("{")) {
-            existRightSubbrackets ++;
-        } else if (block.text().contains("}") && block.text().contains("{")) {
-            for (int i = 0 ; i < block.text().size() ; ++i) {
-                if (block.text().at(i) == "{") {
-                    existLeftSubbrackets++;
-                } else if (block.text().at(i) == "}" && !isFirstLine) {
-                    existRightSubbrackets++;
-                }
-                if (existLeftSubbrackets == existRightSubbrackets &&
-                        existLeftSubbrackets != 0) {
-                    break;
-                }
-            }
-        }
-
-        if (existLeftSubbrackets == existRightSubbrackets &&
-                existLeftSubbrackets != 0) {
-            if (!block.text().contains("{")) {
-                block.setVisible(isVisable);
-                break;
-            } else {
-                block.setVisible(true);
-                break;
-            }
-        }
-        if (isFirstLine) {
-            isFirstLine = false;
-            block.setVisible(true);
-        } else {
-            block.setVisible(isVisable);
-        }
-        block = block.next();
-        iLine++;
-        viewport()->adjustSize();
-    }
 }
 
 void TextEdit::setThemeWithPath(const QString &path)
@@ -2170,6 +1852,7 @@ void TextEdit::setThemeWithPath(const QString &path)
 
 void TextEdit::setTheme(const KSyntaxHighlighting::Theme &theme, const QString &path)
 {
+
     QVariantMap jsonMap = Utils::getThemeMapFromPath(path);
     QVariantMap textStylesMap = jsonMap["text-styles"].toMap();
     const QString &themeCurrentLineColor = jsonMap["editor-colors"].toMap()["current-line"].toString();
@@ -2229,18 +1912,17 @@ void TextEdit::setTheme(const KSyntaxHighlighting::Theme &theme, const QString &
     int iVerticalScrollValue = getScrollOffset();
     int iHorizontalScrollVaule = horizontalScrollBar()->value();
     getScrollOffset();
-//    QString backupTxt = toPlainText();
-//    setPlainText("");
+    QString backupTxt = toPlainText();
+    setPlainText("");
     if (m_highlighted) {
         m_highlighter->rehighlight();
     }
-//    setPlainText(backupTxt);
+    setPlainText(backupTxt);
     verticalScrollBar()->setSliderPosition(iVerticalScrollValue);
     horizontalScrollBar()->setSliderPosition(iHorizontalScrollVaule);
 
     lineNumberArea->update();
     m_pLeftAreaWidget->m_bookMarkArea->update();
-
     highlightCurrentLine();
 }
 
@@ -2696,7 +2378,7 @@ void TextEdit::toggleReadOnlyMode()
     }
 }
 
-void TextEdit::toggleComment(bool sister)
+void TextEdit::toggleComment()
 {
     if (m_readOnlyMode) {
         popupNotify(tr("Read-Only mode is on"));
@@ -2704,16 +2386,9 @@ void TextEdit::toggleComment(bool sister)
     }
 
     const auto def = m_repository.definitionForFileName(QFileInfo(filepath).fileName());
-    qDebug()<<"文件的名字"<<def.name();                  //Java ,C++,HTML,
-    QString name= def.name();
 
     if (!def.filePath().isEmpty()) {
-        if(sister){
-        Comment::setComment(this, m_commentDefinition,name);
-        }
-        else {
-        Comment::removeComment(this, m_commentDefinition,name);
-        }
+        Comment::unCommentSelection(this, m_commentDefinition);
     } else {
         // do not need to prompt the user.
         // popupNotify(tr("File does not support syntax comments"));
@@ -2887,15 +2562,13 @@ void TextEdit::bookMarkAreaPaintEvent(QPaintEvent *event)
     int additional_margin;
     if (blockNumber == 0)
         // Simply adjust to document's margin
-    //    additional_margin = document()->documentMargin() -1 - this->verticalScrollBar()->sliderPosition();
-        additional_margin = document()->documentMargin() - this->verticalScrollBar()->sliderPosition();
+        additional_margin = document()->documentMargin() -1 - this->verticalScrollBar()->sliderPosition();
     else
         // Getting the height of the visible part of the previous "non entirely visible" block
-        additional_margin = document()->documentLayout()->blockBoundingRect(prev_block).toRect()
+        additional_margin = document()->documentLayout()->blockBoundingRect(prev_block)
                 .translated(0, translate_y).intersected(this->viewport()->geometry()).height();
 
     // Shift the starting point
-    additional_margin += 3;
     top += additional_margin;
 
     int frontLine = 0;//滚动条滚过的行
@@ -2914,15 +2587,9 @@ void TextEdit::bookMarkAreaPaintEvent(QPaintEvent *event)
     int startLine = 0;//当前可见区域开始行号
     int startPoint = 0;//当前可见区域开始位置
     int imageTop = 0;//图片绘制位置
-    int fontHeight = fontMetrics().height();
-    double nBookmarkLineHeight = fontHeight;
+    double nBookmarkLineHeight = document()->documentLayout()->blockBoundingRect(block).height();
 
     foreach (auto line, m_listBookmark) {
-
-        if (line <= 0) {
-            m_listBookmark.replace(m_listBookmark.indexOf(line),1);
-        }
-
         lineBlock = document()->findBlockByNumber(line - 1);
         if (nBookmarkLineHeight > document()->documentLayout()->blockBoundingRect(lineBlock).height()) {
             nBookmarkLineHeight = document()->documentLayout()->blockBoundingRect(lineBlock).height();
@@ -2930,7 +2597,6 @@ void TextEdit::bookMarkAreaPaintEvent(QPaintEvent *event)
     }
 
     foreach (auto line, m_listBookmark) {
-
         startLine = frontLine + 1;
 
         if (line < startLine) {
@@ -2947,36 +2613,19 @@ void TextEdit::bookMarkAreaPaintEvent(QPaintEvent *event)
             if(line > 0)
             {
                 lineBlock = document()->findBlockByNumber(line - 1);
-                if(fontHeight > image.height())
+                if(document()->documentLayout()->blockBoundingRect(lineBlock).height() > image.height())
                 {
-
-                    if (document()->documentLayout()->blockBoundingRect(lineBlock).height() > 1.5*fontHeight) {
-
-                        imageTop = startPoint + qFabs(fontHeight - image.height())/2;
-                    }
-                    else {
-
-                        imageTop = startPoint + qFabs(document()->documentLayout()->blockBoundingRect(lineBlock).height() - image.height())/2;
-                    }
-
+                    imageTop = startPoint + (document()->documentLayout()->blockBoundingRect(lineBlock).height() - image.height())/2;
                     scaleImage = image;
-                } else {         
-                    if (document()->documentLayout()->blockBoundingRect(lineBlock).height() > 1.5*fontHeight) {
+                } else {
+                    imageTop = startPoint/* + (image.height() - document()->documentLayout()->blockBoundingRect(lineBlock).height())/2*/;
 
-                        imageTop = startPoint - qFabs(fontHeight - image.height())/2;
-                    }
-                    else {
-
-                        imageTop = startPoint - qFabs(document()->documentLayout()->blockBoundingRect(lineBlock).height() - image.height())/2;
-                    }
-
-                    //imageTop = startPoint + qFabs(document()->documentLayout()->blockBoundingRect(lineBlock).height() - image.height())/2;
-                    double scale = nBookmarkLineHeight/image.height();
-                    double nScaleWidth = scale*image.height()*image.height()/image.width();
+                    double scale = /*document()->documentLayout()->blockBoundingRect(lineBlock).height()*/nBookmarkLineHeight/image.height();
+                    int nScaleWidth = scale*image.height()*image.height()/image.width();
                     scaleImage = image.scaled(scale*image.height(),nScaleWidth);
                 }
 
-                painter.drawImage(5,imageTop,scaleImage);
+                painter.drawImage(10,imageTop,scaleImage);
             }
         }
     }
@@ -3089,224 +2738,6 @@ void TextEdit::moveToNextBookMark()
     }
 }
 
-void TextEdit::flodOrUnflodAllLevel(bool isFlod)
-{
-    foreach (auto line, m_listFlodFlag) {
-        if (document()->findBlockByNumber(line).isVisible() == isFlod) {
-            getNeedControlLine(line - 1, !isFlod);
-        }
-    }
-    viewport()->update();
-    m_pLeftAreaWidget->m_flodArea->update();
-    document()->adjustSize();
-
-}
-
-void TextEdit::flodOrUnflodCurrentLevel(bool isFlod)
-{
-    int line = getLineFromPoint(m_mouseClickPos);
-    getNeedControlLine(line - 1, !isFlod);
-    m_pLeftAreaWidget->m_flodArea->update();
-    viewport()->update();
-    document()->adjustSize();
-
-}
-
-void TextEdit::setIsFileOpen()
-{
-    QStringList bookmarkList = readHistoryRecordofBookmark();
-    QStringList filePathList = readHistoryRecordofFilePath();
-    QList<int> linesList;
-    QString qstrPath = "[" + filepath + "]";
-
-    if (filePathList.contains(qstrPath)) {
-        int index = 1;
-        QString qstrLines = bookmarkList.value(filePathList.indexOf(qstrPath));
-
-        for (int i = 0;i < qstrLines.count();i++) {
-            if(qstrLines.at(i) == "," || qstrLines.at(i) ==")") {
-                linesList << qstrLines.mid(index,i - index).toInt();
-                index = i + 1;
-            }
-        }
-    }
-
-    foreach (const auto line, linesList) {
-
-        m_listBookmark << line - 1;
-    }
-
-    qDebug() << "bookMarkAreaPaintEvent1111" << m_listBookmark;
-    m_bIsFileOpen = false;
-}
-
-QStringList TextEdit::readHistoryRecord()
-{
-    QString history = m_settings->settings->option("advance.editor.browsing_history_file")->value().toString();
-    QStringList historyList;
-    int nLeftPosition = history.indexOf("{");
-    int nRightPosition = history.indexOf("}");
-
-    while (nLeftPosition != -1) {
-        historyList << history.mid(nLeftPosition,nRightPosition + 1 - nLeftPosition);
-        nLeftPosition = history.indexOf("{",nLeftPosition + 1);
-        nRightPosition = history.indexOf("}",nRightPosition + 1);
-    }
-
-    return historyList;
-}
-
-QStringList TextEdit::readHistoryRecordofBookmark()
-{
-    QString history = m_settings->settings->option("advance.editor.browsing_history_file")->value().toString();
-    QStringList bookmarkList;
-    int nLeftPosition = history.indexOf("(");
-    int nRightPosition = history.indexOf(")");
-
-    while (nLeftPosition != -1) {
-        bookmarkList << history.mid(nLeftPosition,nRightPosition + 1 - nLeftPosition);
-        nLeftPosition = history.indexOf("(",nLeftPosition + 1);
-        nRightPosition = history.indexOf(")",nRightPosition + 1);
-    }
-
-    return bookmarkList;
-}
-
-QStringList TextEdit::readHistoryRecordofFilePath()
-{
-    QString history = m_settings->settings->option("advance.editor.browsing_history_file")->value().toString();
-    QStringList filePathList;
-    int nLeftPosition = history.indexOf("[");
-    int nRightPosition = history.indexOf("]");
-
-    while (nLeftPosition != -1) {
-        filePathList << history.mid(nLeftPosition,nRightPosition + 1 - nLeftPosition);
-        nLeftPosition = history.indexOf("[",nLeftPosition + 1);
-        nRightPosition = history.indexOf("]",nRightPosition + 1);
-    }
-
-    return filePathList;
-}
-
-void TextEdit::writeHistoryRecord()
-{
-    QString history = m_settings->settings->option("advance.editor.browsing_history_file")->value().toString();
-    QStringList historyList = readHistoryRecord();
-
-    int nLeftPosition = history.indexOf(filepath);
-    int nRightPosition = history.indexOf("}",nLeftPosition);
-    if (history.contains(filepath)) {
-        history.remove(nLeftPosition - 2,nRightPosition + 3 - nLeftPosition);
-    }
-
-    if (!m_listBookmark.isEmpty()) {
-
-        QString filePathandBookmarkLine = "{[" + filepath + "](";
-
-        foreach (auto line, m_listBookmark) {
-            if (line <= 0) {
-                line = 1;
-            }
-
-            filePathandBookmarkLine += QString::number(line) + ",";
-        }
-
-        filePathandBookmarkLine.remove(filePathandBookmarkLine.count() - 1,1);
-
-        if (historyList.count() <= 5) {
-//            qDebug() << "writeHistoryRecord()" <<  filePathandBookmarkLine + ")}" + history;
-            m_settings->settings->option("advance.editor.browsing_history_file")->setValue(filePathandBookmarkLine + ")}" + history);
-        } else {
-            history.remove(historyList.first());
-            m_settings->settings->option("advance.editor.browsing_history_file")->setValue(filePathandBookmarkLine + ")}" + history);
-        }
-    } else {
-        m_settings->settings->option("advance.editor.browsing_history_file")->setValue(history);
-    }
-}
-
-void TextEdit::isMarkCurrentLine(bool isMark, QString strColor)
-{
-    if (isMark) {
-        QTextEdit::ExtraSelection selection;
-        selection.format.setBackground(QColor(strColor));
-        QTextCursor tmpCursor(document());
-//        QTextDocument::FindFlags flags;
-//        flags &= QTextDocument::FindCaseSensitively;
-//        tmpCursor = document()->find(textCursor().selectedText(), textCursor().position() - textCursor().selectedText().length(), flags);
-        selection.format.setProperty(QTextFormat::FullWidthSelection,true);
-        tmpCursor = this->textCursor();
-        selection.cursor = tmpCursor;
-        m_wordMarkSelections.append(selection);
-
-    } else {
-//        m_wordMarkSelections.removeLast();
-//        updateHighlightLineSelection();
-        for (int i = 0 ; i < m_wordMarkSelections.size(); ++i) {
-            QTextCursor curson = m_wordMarkSelections.at(i).cursor;
-            curson.movePosition(QTextCursor::EndOfLine);
-            QTextCursor currentCurson = textCursor();
-            currentCurson.movePosition(QTextCursor::EndOfLine);
-     //       if (m_wordMarkSelections.at(i).cursor == textCursor()) {
-            if(curson == currentCurson) {
-                m_wordMarkSelections.removeAt(i);
-//                renderAllSelections();
-                break;
-            }
-        }
-    }
-}
-
-void TextEdit::isMarkAllLine(bool isMark, QString strColor)
-{
-    m_wordMarkSelections.clear();
-    if (isMark) {
-        QTextEdit::ExtraSelection selection;
-
-        selection.format.setBackground(QColor(strColor));
-        selection.cursor = textCursor();
-        selection.cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-        selection.cursor.select(QTextCursor::Document);
-        m_markAllSelection = selection;
-    } else {
-        QTextEdit::ExtraSelection selection;
-        selection.format.setBackground(QColor(strColor));
-        selection.cursor = textCursor();
-        selection.cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-        selection.cursor.clearSelection();
-        m_markAllSelection = selection;
-    }
-}
-
-void TextEdit::cancleLastMark()
-{
-    if (m_wordMarkSelections.size() <= 1)
-        return;
-    m_wordMarkSelections.removeAt(m_wordMarkSelections.size() - 2);
-    updateHighlightLineSelection();
-}
-
-void TextEdit::markSelectWord()
-{
-    bool isFind  = false;
-    for (int i = 0 ; i < m_wordMarkSelections.size(); ++i) {
-        QTextCursor curson = m_wordMarkSelections.at(i).cursor;
-        curson.movePosition(QTextCursor::EndOfLine);
-        QTextCursor currentCurson = textCursor();
-        currentCurson.movePosition(QTextCursor::EndOfLine);
- //       if (m_wordMarkSelections.at(i).cursor == textCursor()) {
-        if(curson == currentCurson) {
-            isFind = true;
-            m_wordMarkSelections.removeAt(i);
-            renderAllSelections();
-            break;
-        }
-    }
-    if (!isFind) {
-        isMarkCurrentLine(true, STYLE_COLOR_1);
-        renderAllSelections();
-    }
-}
 void TextEdit::completionWord(QString word)
 {
     QString wordAtCursor = getWordAtCursor();
@@ -3353,51 +2784,6 @@ bool TextEdit::eventFilter(QObject *object, QEvent *event)
             } else {
                 addOrDeleteBookMark();
             }
-        } else if (object == m_pLeftAreaWidget->m_flodArea) {
-            if (mouseEvent->button() == Qt::LeftButton) {
-                int line = getLineFromPoint(mouseEvent->pos());
-                if (document()->findBlockByNumber(line).isVisible() && document()->findBlockByNumber(line).text().contains("{")
-                        && document()->findBlockByNumber(line).text().trimmed().startsWith("{")) {
-                    getNeedControlLine(line - 1, false);
-                } else if (!document()->findBlockByNumber(line).isVisible() && document()->findBlockByNumber(line).text().contains("{")
-                           && document()->findBlockByNumber(line).text().trimmed().startsWith("{")) {
-                    getNeedControlLine(line - 1, true);
-                }
-
-                if (document()->findBlockByNumber(line).isVisible() && document()->findBlockByNumber(line - 1).text().contains("{")
-                        && !document()->findBlockByNumber(line - 1).text().trimmed().startsWith("{")) {
-                    getNeedControlLine(line - 1, false);
-
-                } else if (!document()->findBlockByNumber(line).isVisible() && document()->findBlockByNumber(line - 1).text().contains("{")
-                           && !document()->findBlockByNumber(line - 1).text().trimmed().startsWith("{")) {
-                    getNeedControlLine(line - 1, true);
-                }
-                m_pLeftAreaWidget->m_flodArea->update();
-                m_pLeftAreaWidget->m_linenumberarea->update();
-                m_pLeftAreaWidget->m_bookMarkArea->update();
-                viewport()->update();
-                document()->adjustSize();
-            } else {
-                m_mouseClickPos = mouseEvent->pos();
-                m_rightMenu->clear();
-                int line = getLineFromPoint(mouseEvent->pos());
-                if (m_listFlodIconPos.contains(line - 1)) {
-                    m_rightMenu->addAction(m_flodAllLevel);
-                    m_rightMenu->addAction(m_unflodAllLevel);
-                    m_rightMenu->addAction(m_flodCurrentLevel);
-                    m_rightMenu->addAction(m_unflodCurrentLevel);
-                }
-                if (document()->findBlockByNumber(line).isVisible()) {
-                    m_unflodCurrentLevel->setEnabled(false);
-                    m_flodCurrentLevel->setEnabled(true);
-                } else {
-                    m_unflodCurrentLevel->setEnabled(true);
-                    m_flodCurrentLevel->setEnabled(false);
-                }
-                m_rightMenu->exec(mouseEvent->globalPos());
-            }
-
-
         }
     }
 
@@ -3674,9 +3060,7 @@ void TextEdit::keyPressEvent(QKeyEvent *e)
         } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "editor", "togglereadonlymode")|| key=="Alt+Meta+L") {
             toggleReadOnlyMode();
         } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "editor", "togglecomment")) {
-            toggleComment(true);
-        } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "editor", "removecomment")) {
-            toggleComment(false);
+            toggleComment();
         } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "editor", "undo")) {
             QTextEdit::undo();
         } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "editor", "redo")) {
@@ -3724,9 +3108,7 @@ void TextEdit::keyPressEvent(QKeyEvent *e)
         selectAll();
     } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "editor", "copy")) {
         copySelectedText();
-    } else if (key == "Ctrl+F6") {
-        markSelectWord();
-    }
+    } 
 }
 
 void TextEdit::wheelEvent(QWheelEvent *e)
@@ -3824,22 +3206,12 @@ void TextEdit::contextMenuEvent(QContextMenuEvent *event)
     if (!toPlainText().isEmpty() &&
         (textCursor().hasSelection() || !isBlankLine) &&
         !def.filePath().isEmpty()) {
-//        m_rightMenu->addAction(m_toggleCommentAction);
-
-        //yanyuhan 折叠、代码注释（有代码选中时增加注释选项显示）
-//        m_rightMenu->addMenu(m_collapseExpandMenu);             //折叠展开
-
-        m_rightMenu->addAction(m_addComment);
-        m_rightMenu->addAction(m_cancelComment);
+        m_rightMenu->addAction(m_toggleCommentAction);
 
         if (m_readOnlyMode == true) {
-//            m_toggleCommentAction->setEnabled(false);
-            m_addComment->setEnabled(false);
-            m_cancelComment->setEnabled(false);
+            m_toggleCommentAction->setEnabled(false);
         } else {
-//            m_toggleCommentAction->setEnabled(true);
-            m_addComment->setEnabled(true);
-            m_cancelComment->setEnabled(true);
+            m_toggleCommentAction->setEnabled(true);
         }
     }
 
@@ -3929,37 +3301,6 @@ void TextEdit::contextMenuEvent(QContextMenuEvent *event)
             m_translateAction->setEnabled(translateState);
         }
     }
-
-    //yanyuhan
-//    m_rightMenu->addMenu(m_colormarkMenu);          //标记功能
-//    m_rightMenu->addAction(m_columnEditACtion);           //列编辑模式
-
-
-//    m_rightMenu->addSeparator();
-//    m_rightMenu->addMenu(m_markAllLine);
-//    m_rightMenu->addAction(m_cancleMarkAllLine);
-
-//    if (textCursor().hasSelection()) {
-//        m_rightMenu->addMenu(m_markCurrentLine);
-//        m_rightMenu->addAction(m_cancleMarkCurrentLine);
-//    }
-//    if (m_wordMarkSelections.size() > 1) {
-//        m_rightMenu->addAction(m_cancleLastMark);
-//    }
-    m_rightMenu->addSeparator();
-    m_rightMenu->addMenu(m_colorMarkMenu);
-    m_colorMarkMenu->clear();
-    m_colorMarkMenu->addMenu(m_markCurrentLine);
-    if (m_wordMarkSelections.size() > 1) {
-        m_colorMarkMenu->addAction(m_cancleLastMark);
-    }
-    m_colorMarkMenu->addAction(m_cancleMarkAllLine);
-    m_colorMarkMenu->addMenu(m_markAllLine);
-
-//    if (textCursor().hasSelection()) {
-//        m_colorMarkMenu->addMenu(m_markCurrentLine);
-//        m_colorMarkMenu->addAction(m_cancleMarkCurrentLine);
-//    }
 
     m_rightMenu->exec(event->globalPos());
 }

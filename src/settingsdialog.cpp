@@ -97,7 +97,6 @@ void GenerateSettingTranslate()
     auto shortcuts_editor_joinlinesName = QObject::tr("Merge lines");
     auto shortcuts_editor_togglereadonlymodeName = QObject::tr("Read-Only mode");
     auto shortcuts_editor_togglecommentName = QObject::tr("Toggle comment");
-    auto shortcuts_editor_removecommentName = QObject::tr("Remove comment");
     auto shortcuts_editor_undoName = QObject::tr("Undo");
     auto shortcuts_editor_redoName = QObject::tr("Redo");
     auto shortcuts_editor_switchbookmarkName = QObject::tr("Switch bookmark");
@@ -109,6 +108,6 @@ void GenerateSettingTranslate()
     auto advance_editor_tabspacenumberName = QObject::tr("Tab width");
 
     auto base_font_wordwrapText = QObject::tr("Word Wrap");
-    auto base_font_codeflod = QObject::tr("Code Flod Flag");
-    auto base_font_showLineNumber = QObject::tr("Show Line Number");
+
+    auto advance_window_showLineNumber = QObject::tr("Show Line Number");
 }

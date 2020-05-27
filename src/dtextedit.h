@@ -40,11 +40,6 @@ namespace KSyntaxHighlighting {
     class SyntaxHighlighter;
 }
 
-const QString STYLE_COLOR_1 = "#FFA503";
-const QString STYLE_COLOR_2 = "#FF1C49";
-const QString STYLE_COLOR_3 = "#9023FC";
-const QString STYLE_COLOR_4 = "#05EA6B";
-
 enum ConvertCase { UPPER, LOWER, CAPITALIZE };
 
 class leftareaoftextedit;
@@ -61,7 +56,6 @@ public:
     };
 
     TextEdit(QWidget *parent = nullptr);
-    ~TextEdit() override;
 
     LineNumberArea *lineNumberArea;
     leftareaoftextedit *m_pLeftAreaWidget;
@@ -148,8 +142,7 @@ public:
     DMenu *getHighlightMenu();
 
     void lineNumberAreaPaintEvent(QPaintEvent *event);
-    void codeFLodAreaPaintEvent(QPaintEvent *event);
-    void setCodeFlodFlagVisable(bool isVisable,bool bIsFirstOpen = false);
+
     void setThemeWithPath(const QString &path);
     void setTheme(const KSyntaxHighlighting::Theme &theme, const QString &path);
     void loadHighlighter();
@@ -177,7 +170,7 @@ public:
     QString getWordAtCursor();
 
     void toggleReadOnlyMode();
-    void toggleComment(bool sister);
+    void toggleComment();
 
     int getNextWordPosition(QTextCursor cursor, QTextCursor::MoveMode moveMode);
     int getPrevWordPosition(QTextCursor cursor, QTextCursor::MoveMode moveMode);
@@ -194,28 +187,12 @@ public:
 
     void clearBlack();
 
-    void flodOrUnflodAllLevel(bool isFlod);
-    void flodOrUnflodCurrentLevel(bool isFlod);
-
-    //书签功能相关
     void bookMarkAreaPaintEvent(QPaintEvent *event);
     int getLineFromPoint(const QPoint &point);
     void addOrDeleteBookMark();
     void moveToPreviousBookMark();
     void moveToNextBookMark();
-    void setIsFileOpen();
-    QStringList readHistoryRecord();
-    QStringList readHistoryRecordofBookmark();
-    QStringList readHistoryRecordofFilePath();
-    void writeHistoryRecord();
- 
-    void isMarkCurrentLine(bool isMark, QString strColor = "");
-    void isMarkAllLine(bool isMark, QString strColor = "");
-    void cancleLastMark();
-    void markSelectWord();
-	
-public:
-	bool m_pIsShowCodeFoldArea;
+
 signals:
     void clickFindAction();
     void clickReplaceAction();
@@ -286,7 +263,6 @@ private:
     void cursorPositionChanged();
     void updateHighlightBrackets(const QChar &openChar, const QChar &closeChar);
     int getFirstVisibleBlockId() const;
-    void getNeedControlLine(int line, bool isVisable);
 
 private:
     EditWrapper *m_wrapper;
@@ -298,8 +274,6 @@ private:
     QTextEdit::ExtraSelection m_currentLineSelection;
     QTextEdit::ExtraSelection m_findHighlightSelection;
     QTextEdit::ExtraSelection m_wordUnderCursorSelection;
-    QList<QTextEdit::ExtraSelection> m_wordMarkSelections;
-    QTextEdit::ExtraSelection m_markAllSelection;
 
     QTextCursor m_highlightWordCacheCursor;
     QTextCursor m_wordUnderPointerCursor;
@@ -340,34 +314,6 @@ private:
     QAction *m_clearBookMarkAction;
     QAction *m_preBookMarkAction;
     QAction *m_nextBookMarkAction;
-    QAction *m_flodAllLevel;
-    QAction *m_unflodAllLevel;
-    QAction *m_flodCurrentLevel;
-    QAction *m_unflodCurrentLevel;
-
-    //yanyuhan
-     //颜色标记、折叠/展开、书签、列编辑、设置注释、取消注释;
- //    QAction *m_colorMarkAction;
-    DMenu *m_collapseExpandMenu;
-    DMenu *m_colorMarkMenu;
-    DMenu *m_markCurrentLine;
-    DMenu *m_markAllLine;
-    QAction *m_cancleMarkCurrentLine;
-    QAction *m_cancleMarkAllLine;
-    QAction *m_cancleLastMark;
-    QAction *m_actionStyleOne;
-    QAction *m_actionStyleTwo;
-    QAction *m_actionStyleThree;
-    QAction *m_actionStyleFour;
-
-    QAction *m_actionAllStyleOne;
-    QAction *m_actionAllStyleTwo;
-    QAction *m_actionAllStyleThree;
-    QAction *m_actionAllStyleFour;
- //    QAction *m_bookmarkAction;
-     QAction *m_columnEditACtion;
-     QAction *m_addComment;
-     QAction *m_cancelComment;
 
     DMenu *m_convertCaseMenu;
     QAction *m_upcaseAction;
@@ -430,10 +376,6 @@ private:
     QFont m_fontLineNumberArea;
     QList<int> m_listBookmark;
     int m_nLines;
-    bool m_bIsFileOpen;
-
-    QList<int> m_listFlodFlag;
-    QList<int> m_listFlodIconPos;
 };
 
 #endif

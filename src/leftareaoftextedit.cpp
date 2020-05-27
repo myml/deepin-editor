@@ -17,7 +17,6 @@
 #include "leftareaoftextedit.h"
 #include "linenumberarea.h"
 #include "bookmarkwidget.h"
-#include "codeflodarea.h"
 #include "dtextedit.h"
 #include <QHBoxLayout>
 #include <QDebug>
@@ -26,20 +25,20 @@ leftareaoftextedit::leftareaoftextedit(TextEdit *textEdit)
 {
     QHBoxLayout *hLayout = new QHBoxLayout;
     m_bookMarkArea = new bookmarkwidget(this);
-    m_flodArea = new CodeFlodArea(this);
+    m_flodArea = new QWidget;
     m_linenumberarea = new LineNumberArea(this);
 
     m_bookMarkArea->setContentsMargins(0,0,0,0);
     m_flodArea->setContentsMargins(0,0,0,0);
     m_linenumberarea->setContentsMargins(0,0,0,0);
     m_bookMarkArea->setFixedWidth(23);
-    m_flodArea->setFixedWidth(23);
-    //m_bookMarkArea->setMinimumWidth(20);
+//    m_flodArea->setFixedWidth(23);
+//    m_bookMarkArea->setMinimumWidth(20);
 //    m_flodArea->setMinimumWidth(20);
     hLayout->addWidget(m_bookMarkArea);
     hLayout->addWidget(m_linenumberarea);
-    hLayout->addWidget(m_flodArea);
-    hLayout->setContentsMargins(0, 0, 0, 0);
+//    hLayout->addWidget(m_flodArea);
+    hLayout->setContentsMargins(0,0,0,0);
     hLayout->setSpacing(0);
     this->setLayout(hLayout);
     m_textEdit = textEdit;
@@ -73,11 +72,6 @@ int leftareaoftextedit::lineNumberAreaWidth()
 void leftareaoftextedit::bookMarkAreaPaintEvent(QPaintEvent *event)
 {
     m_textEdit->bookMarkAreaPaintEvent(event);
-}
-
-void leftareaoftextedit::codeFlodAreaPaintEvent(QPaintEvent *event)
-{
-    m_textEdit->codeFLodAreaPaintEvent(event);
 }
 
 //void leftareaoftextedit::paintEvent(QPaintEvent *e)

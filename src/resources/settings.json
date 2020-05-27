@@ -28,21 +28,6 @@
                             "type": "checkbox",
                             "text": "Word Wrap",
                             "default": "true"
-                        },
-                        {
-
-                            "key":"codeflod",
-                            "name":"CODE FLOD",
-                            "type":"checkbox",
-                            "text":"Code Flod Flag",
-                            "default":"false"
-                        },
-                        {
-                            "key": "showlinenumber",
-                            "name": "Show line number",
-                            "type": "checkbox",
-                            "text": "Show Line Number",
-                            "default": "true"
                         }
                     ]
                 }
@@ -474,13 +459,7 @@
                             "key": "togglecomment",
                             "name": "Toggle comment",
                             "type": "shortcut",
-                            "default":  "Alt+A"
-                        },
-                        {
-                            "key": "removecomment",
-                            "name": "Remove comment",
-                            "type": "shortcut",
-                            "default":  "Alt+Z"
+                            "default":  "Ctrl+/"
                         },
                         {
                             "key": "undo",
@@ -950,13 +929,7 @@
                             "key": "togglecomment",
                             "hide" : true,
                             "reset" : false,
-                            "default":  "Alt+A"
-                        },
-                        {
-                            "key": "removecomment",
-                            "hide" : true,
-                            "reset" : false,
-                            "default":  "Alt+Z"
+                            "default":  "Ctrl+/"
                         },
                         {
                             "key": "undo",
@@ -1429,12 +1402,6 @@
                             "default":  "Ctrl+Shift+:"
                         },
                         {
-                            "key": "removecomment",
-                            "hide" : true,
-                            "reset" : false,
-                            "default":  "Ctrl+Shift+;"
-                        },
-                        {
                             "key": "undo",
                             "hide" : true,
                             "reset" : false,
@@ -1902,13 +1869,7 @@
                             "key": "togglecomment",
                             "hide" : true,
                             "reset" : false,
-                            "default":  "Alt+A"
-                        },
-                        {
-                            "key": "removecomment",
-                            "hide" : true,
-                            "reset" : false,
-                            "default":  "Alt+Z"
+                            "default":  "Ctrl+/"
                         },
                         {
                             "key": "undo",
@@ -1969,6 +1930,13 @@
                             "hide" : true,
                             "reset" : false,
                             "default": 0.6
+                        },
+                        {
+                            "key": "showlinenumber",
+                            "name": "Show line number",
+                            "type": "checkbox",
+                            "text": "Show Line Number",
+                            "default": "true"
                         }
                     ]
                 },
@@ -1986,12 +1954,6 @@
                         },
                         {
                             "key": "file_dialog_dir",
-                            "hide": true,
-                            "reset": false,
-                            "default": ""
-                        },
-                        {
-                            "key": "browsing_history_file",
                             "hide": true,
                             "reset": false,
                             "default": ""

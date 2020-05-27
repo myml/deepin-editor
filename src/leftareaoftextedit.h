@@ -19,7 +19,6 @@
 
 #include <QWidget>
 
-class CodeFlodArea;
 class bookmarkwidget;
 class LineNumberArea;
 class TextEdit;
@@ -33,14 +32,12 @@ public:
     int lineNumberAreaWidth();
 //    LineNumberArea *getLineNumberArea();
 //    bookmarkwidget *getBookMarkWidget();
-//    CodeFlodArea   *getCodeFlodArea();
 
     void bookMarkAreaPaintEvent(QPaintEvent *event);
-    void codeFlodAreaPaintEvent(QPaintEvent *event);
 public:
     LineNumberArea *m_linenumberarea;
     bookmarkwidget *m_bookMarkArea;
-    CodeFlodArea *m_flodArea;
+    QWidget *m_flodArea;
 
 protected:
 //    void paintEvent(QPaintEvent *e) override;

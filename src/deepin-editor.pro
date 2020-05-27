@@ -50,9 +50,8 @@ HEADERS += window.h \
            environments.h \
            fontitemdelegate.h \
     	   warningnotices.h \
-    bookmarkwidget.h \
     leftareaoftextedit.h \
-    codeflodarea.h
+    bookmarkwidget.h \
 
 SOURCES += window.cpp \
            startmanager.cpp \
@@ -82,9 +81,8 @@ SOURCES += window.cpp \
            thememodule/themelistview.cpp \
            fontitemdelegate.cpp \
     	   warningnotices.cpp \
-    bookmarkwidget.cpp \
     leftareaoftextedit.cpp \
-    codeflodarea.cpp
+    bookmarkwidget.cpp \
 
 
 QMAKE_CXXFLAGS += -g

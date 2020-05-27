@@ -22,7 +22,6 @@
 
 #include <DTabBar>
 #include <DMenu>
-#include<QMouseEvent>
 
 DWIDGET_USE_NAMESPACE
 

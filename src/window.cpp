@@ -93,12 +93,6 @@ Window::Window(DMainWindow *parent)
            wrapper->setLineNumberShow(bIsShow);
        }
     });
-    connect(m_settings, &Settings::showCodeFlodFlag, this, [ = ](bool enable) {
-        for (EditWrapper *wrapper : m_wrappers.values()) {
-            TextEdit *textedit = wrapper->textEditor();
-            textedit->setCodeFlodFlagVisable(enable);
-        }
-    });
 
     // Init layout and editor.
     m_centralLayout->setMargin(0);
@@ -491,7 +485,6 @@ void Window::closeTab()
 
             // don't save.
             if (index == 1) {
-                removeWrapper(filePath, true);
                 m_tabbar->closeCurrentTab();
 
                 // delete the draft document.
@@ -499,11 +492,12 @@ void Window::closeTab()
                     QFile(filePath).remove();
                 }
 
-//                removeWrapper(filePath, true);
+                removeWrapper(filePath, true);
             } else if (index == 2) {
                 // may to press CANEL button in the save dialog.
                 if (saveFile()) {
-                    m_tabbar->closeCurrentTab();                  
+                    m_tabbar->closeCurrentTab();
+                    removeWrapper(filePath, true);
                 }
             }
 
@@ -519,7 +513,6 @@ void Window::closeTab()
         }
 
         // close tab directly, because all file is save automatically.
-        removeWrapper(filePath, true);
         m_tabbar->closeCurrentTab();
 
         // remove blank file.
@@ -527,7 +520,7 @@ void Window::closeTab()
             QFile::remove(filePath);
         }
 
-//        removeWrapper(filePath, true);
+        removeWrapper(filePath, true);
         focusActiveEditor();
     }
 }
@@ -566,7 +559,6 @@ EditWrapper *Window::createEditor()
 {
     EditWrapper *wrapper = new EditWrapper();
     bool wordWrap = m_settings->settings->option("base.font.wordwrap")->value().toBool();
-    wrapper->textEditor()->m_pIsShowCodeFoldArea = m_settings->settings->option("base.font.codeflod")->value().toBool();
 
     wrapper->textEditor()->setThemeWithPath(m_themePath);
     wrapper->textEditor()->setSettings(m_settings);
@@ -574,9 +566,8 @@ EditWrapper *Window::createEditor()
     wrapper->textEditor()->setFontFamily(m_settings->settings->option("base.font.family")->value().toString());
     wrapper->textEditor()->setModified(false);
     wrapper->textEditor()->setLineWrapMode(wordWrap);
-//    wrapper->setLineNumberShow(m_settings->settings->option("base.font.showlinenumber")->value().toBool());
+//    wrapper->setLineNumberShow(m_settings->settings->option("advance.window.showlinenumber")->value().toBool());
     setFontSizeWithConfig(wrapper);
-    wrapper->textEditor()->updateLineNumber();
 
     connect(wrapper->textEditor(), &TextEdit::signal_readingPath, this, &Window::slot_saveReadingPath, Qt::QueuedConnection);
 
@@ -663,13 +654,11 @@ void Window::removeWrapper(const QString &filePath, bool isDelete)
         m_wrappers.remove(filePath);
 
         if (isDelete) {
-            //wrapper->deleteLater();
-            disconnect(wrapper->textEditor(), 0, this, 0);
-            delete wrapper;
+            wrapper->deleteLater();
         }
 
         // remove all signals on this connection.
-        //disconnect(wrapper->textEditor(), 0, this, 0);
+        disconnect(wrapper->textEditor(), 0, this, 0);
     }
 
     // Exit window after close all tabs.
@@ -756,7 +745,6 @@ bool Window::saveFile()
             // 为空文件更新保存后的标签名称，以及其对应的文件路径
             m_tabbar->updateTab(m_tabbar->currentIndex(), new_path, info.fileName());
         }
-        removeWrapper(new_path, true);
     }
     // save normal file.
     else {
@@ -780,6 +768,7 @@ bool Window::saveFile()
                 showNotify(tr("Saved successfully"));
                 m_wrappers.value(m_tabbar->currentPath())->setTextChangeFlag(false);
             }
+
         }
     }
 
@@ -1008,10 +997,11 @@ void Window::setFontSizeWithConfig(EditWrapper *wrapper)
 void Window::popupFindBar()
 {
     EditWrapper *curWrapper = currentWrapper();
+    currentWrapper()->bottomBar()->updateSize(59);
+
     if (curWrapper->textEditor()->toPlainText().isEmpty()) {
         return;
     }
-	currentWrapper()->bottomBar()->updateSize(59);
 
     if (m_findBar->isVisible()) {
         m_findBar->move(QPoint(10, height() - 59));
@@ -1051,6 +1041,7 @@ void Window::popupFindBar()
 void Window::popupReplaceBar()
 {
     EditWrapper *curWrapper = currentWrapper();
+    currentWrapper()->bottomBar()->updateSize(59);
     bool bIsReadOnly = curWrapper->textEditor()->getReadOnlyMode();
 
     if (bIsReadOnly) {
@@ -1061,7 +1052,6 @@ void Window::popupReplaceBar()
     if (curWrapper->textEditor()->toPlainText().isEmpty()) {
         return;
     }
-	currentWrapper()->bottomBar()->updateSize(59);
 
     if (m_replaceBar->isVisible()) {
         m_replaceBar->move(QPoint(10, height() - 59));
@@ -1310,7 +1300,7 @@ void Window::displayShortcuts()
                   << "backwardpair" << "selectall" << "copy" << "cut"
                   << "paste" << "transposechar" << "setmark" << "exchangemark"
                   << "copylines" << "cutlines" << "joinlines" << "togglereadonlymode"
-                  << "togglecomment" <<"removecomment"<<"undo" << "redo" << "switchbookmark" << "movetoprebookmark"
+                  << "togglecomment" << "undo" << "redo" << "switchbookmark" << "movetoprebookmark"
                   << "movetonextbookmark";
 
     QJsonObject editorJsonGroup;
@@ -1478,7 +1468,6 @@ void Window::handleTabsClosed(QStringList tabList)
     // close tabs.
     for (const QString &path : tabList) {
         if (m_wrappers.contains(path)) {
-            removeWrapper(path, true);
             m_tabbar->closeTab(m_tabbar->indexOf(path));
         }
     }
@@ -1700,8 +1689,7 @@ void Window::showNewEditor(EditWrapper *wrapper)
     m_editorWidget->addWidget(wrapper);
     m_editorWidget->setCurrentWidget(wrapper);
     //yanyuhan 设置行号显示
-    wrapper->setLineNumberShow(m_settings->settings->option("base.font.showlinenumber")->value().toBool());
-    wrapper->textEditor()->setCodeFlodFlagVisable(m_settings->settings->option("base.font.codeflod")->value().toBool(), true);
+    wrapper->setLineNumberShow(m_settings->settings->option("advance.window.showlinenumber")->value().toBool());
 }
 
 void Window::showNotify(const QString &message)
@@ -1878,22 +1866,12 @@ void Window::closeEvent(QCloseEvent *e)
     for (EditWrapper *wrapper : m_wrappers) {
         // save all the draft documents.
         if (QFileInfo(wrapper->textEditor()->filepath).dir().absolutePath() == m_blankFileDir) {
-            if (wrapper->saveFile()) {
-                //wrapper->deleteLater();
-                // remove all signals on this connection.
-                disconnect(wrapper->textEditor(), 0, this, 0);
-                delete wrapper;
-            }
+            wrapper->saveFile();
             continue;
         }
 
         if (wrapper->textEditor()->document()->isModified()) {
             needSaveList << wrapper;
-        } else {
-            //wrapper->deleteLater();
-            // remove all signals on this connection.
-            disconnect(wrapper->textEditor(), 0, this, 0);
-            delete wrapper;
         }
     }
 
@@ -1903,20 +1881,10 @@ void Window::closeEvent(QCloseEvent *e)
         connect(dialog, &DDialog::buttonClicked, this, [ = ](int index) {
             dialog->hide();
 
-            for (EditWrapper *wrapper : needSaveList) {
-                if (index == 2) {
-                    // save files.
-                    if (wrapper->saveFile()) {
-//                        wrapper->deleteLater();
-                        // remove all signals on this connection.
-                        disconnect(wrapper->textEditor(), 0, this, 0);
-                        delete wrapper;
-                    }
-                } else {
-//                    wrapper->deleteLater();
-                    // remove all signals on this connection.
-                    disconnect(wrapper->textEditor(), 0, this, 0);
-                    delete wrapper;
+            if (index == 2) {
+                // save all the files.
+                for (EditWrapper *wrapper : needSaveList) {
+                    wrapper->saveFile();
                 }
             }
         });
@@ -2017,9 +1985,9 @@ void Window::keyPressEvent(QKeyEvent *e)
         displayShortcuts();
     } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "window", "print")) {
         popupPrintDialog();
-    } /*else if (e->key() == Qt::Key_F5) {
+    } else if (e->key() == Qt::Key_F5) {
         currentWrapper()->refresh();
-    }*/ else {
+    } else {
         // Post event to window widget if match Alt+0 ~ Alt+9
         QRegularExpression re("^Alt\\+\\d");
         QRegularExpressionMatch match = re.match(key);
