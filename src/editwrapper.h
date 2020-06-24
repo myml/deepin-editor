@@ -89,6 +89,9 @@ signals:
 
 public slots:
     void onFileClosed();
+    void onScrollChanged(int value);
+    void onValueChanged(int value);
+    void onRangeChanged(int min, int max);
 
 private:
     void detectEndOfLine();
@@ -109,6 +112,7 @@ private:
     TextEdit *m_textEdit;
     //BottomBar *m_bottomBar;
     QTextCodec *m_textCodec;
+    QScrollBar *m_pScrollBar;
 
     EndOfLineMode m_endOfLineMode;
     bool m_isLoadFinished;
@@ -119,6 +123,21 @@ private:
     bool m_bTextChange = true;
     QByteArray m_BeforeEncodeName {"UTF-8"};
     bool m_bIsContinue;
+    QStringList m_listPartDate;
+    QList<int> m_listPartBlockCountSum;
+    int m_nCurrShowParts;
+    int m_nVscrollValueSum;
+    int m_nCurrShowVscrollValue;
+    int m_nVscrollBarValue;
+    int m_nOldVscrollValue;
+    int m_nOldExtraVscrollValue;
+    int m_nDefVscrollValue;
+    bool m_bIsSetText;
+    QMap <int,int> m_mapVscrollRange;
+    int m_nLastPageRows;
+    int m_nVscrollBarMapValue;
+    int m_nPageStartLine;
+
 
 public slots:
     void slotTextChange();

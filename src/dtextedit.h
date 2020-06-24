@@ -213,6 +213,7 @@ public:
     void moveToNextBookMark();
     void checkBookmarkLineMove();
     void setIsFileOpen();
+    void setTextStart();
     void setTextFinished();
     QStringList readHistoryRecord();
     QStringList readHistoryRecordofBookmark();
@@ -223,7 +224,16 @@ public:
     void isMarkAllLine(bool isMark, QString strColor = "");
     void cancelLastMark();
     void markSelectWord();
-    void updateMark(int from, int charsRemoved, int charsAdded);
+    bool containsExtraSelection(QList<QTextEdit::ExtraSelection> listSelections, QTextEdit::ExtraSelection selection);
+    void appendExtraSelection(QList<QTextEdit::ExtraSelection> wordMarkSelections
+                              ,QTextEdit::ExtraSelection selection,QString strColor
+                              ,QList<QTextEdit::ExtraSelection> *listSelections);
+
+    void setPageStartLine(int nLine);
+    void setBlockCount(int nBlockCount);
+    void setCharacterCount(int nCharacterCount);
+    void setCurrentPageNumber(int nPageNumber);
+    QMap<int,QString> getModifyRecord();
 
 public:
     bool bIsSetLineNumberWidth = true;
@@ -243,8 +253,9 @@ signals:
     void signal_readingPath();
 
     void signal_clearBlack();
-
-
+private slots:
+    void onUpdateMark(int from, int charsRemoved, int charsAdded);
+    void onUpdateCharCount(int from, int charsRemoved, int charsAdded);
 
 public slots:
     void highlightCurrentLine();
@@ -280,11 +291,7 @@ public slots:
 
     void handleCursorMarkChanged(bool mark, QTextCursor cursor);
 
-    void adjustScrollbarMargins();
-    bool containsExtraSelection(QList<QTextEdit::ExtraSelection> listSelections, QTextEdit::ExtraSelection selection);
-    void appendExtraSelection(QList<QTextEdit::ExtraSelection> wordMarkSelections
-                              ,QTextEdit::ExtraSelection selection,QString strColor
-                              ,QList<QTextEdit::ExtraSelection> *listSelections);
+    void adjustScrollbarMargins();   
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -453,14 +460,21 @@ private:
     QList<int> m_listBookmark;
     int m_nBookMarkHoverLine;
     int m_nLines;
-    bool m_bIsFileOpen;
+    bool m_bIsSetText;
 
     //存储所有有折叠标记的位置，包含不可见区域
     QList<int> m_listFlodFlag;
     //包含当前可见区域的标志
     QList<int> m_listFlodIconPos;
     QString m_qstrCommitString;
+    QString m_qstrCommitStringDuplication;
     bool m_bIsInputMethod;
+    bool m_bIsInputMethodDuplication;
+    int m_nPageStartLine;
+    int m_nBlockCount;
+    int m_nCharacterCount;
+    int m_nPageNumber;
+    QMap<int,QString> m_mapModifyRecord;
 };
 
 #endif

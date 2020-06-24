@@ -86,7 +86,7 @@ TextEdit::TextEdit(QWidget *parent)
 {
     m_nLines = 0;
     m_nBookMarkHoverLine = -1;
-    m_bIsFileOpen = false;
+    m_bIsSetText = false;
     m_qstrCommitString = "";
     m_bIsInputMethod = false;
     //lineNumberArea = new LineNumberArea(m_pLeftAreaWidget);
@@ -117,7 +117,7 @@ TextEdit::TextEdit(QWidget *parent)
     connect(this->verticalScrollBar(), &QScrollBar::valueChanged, this, &TextEdit::updateLineNumber);
     connect(this, &QTextEdit::textChanged, this, [this]() {
 
-        if (!m_bIsFileOpen) {
+        if (!m_bIsSetText) {
             checkBookmarkLineMove();
         }
         updateLineNumber();
@@ -125,7 +125,8 @@ TextEdit::TextEdit(QWidget *parent)
     });
     connect(this, &QTextEdit::cursorPositionChanged, this, &TextEdit::cursorPositionChanged);
     connect(document(), &QTextDocument::modificationChanged, this, &TextEdit::setModified);
-    connect(document(), &QTextDocument::contentsChange, this, &TextEdit::updateMark);
+    connect(document(), &QTextDocument::contentsChange, this, &TextEdit::onUpdateMark);
+    connect(document(), &QTextDocument::contentsChange, this, &TextEdit::onUpdateCharCount);
 
     m_foldCodeShow = new ShowFlodCodeWidget(this);
     m_foldCodeShow->setVisible(false);
@@ -725,7 +726,7 @@ void TextEdit::newline()
 
     QTextCursor cursor = textCursor();
     cursor.insertText("\n");
-    setTextCursor(cursor);
+//    setTextCursor(cursor);
 }
 
 void TextEdit::openNewlineAbove()
@@ -738,7 +739,7 @@ void TextEdit::openNewlineAbove()
     cursor.insertText("\n");
     cursor.movePosition(QTextCursor::Up, QTextCursor::MoveAnchor);
 
-    setTextCursor(cursor);
+//    setTextCursor(cursor);
 }
 
 void TextEdit::openNewlineBelow()
@@ -747,7 +748,7 @@ void TextEdit::openNewlineBelow()
     tryUnsetMark();
 
     moveCursorNoBlink(QTextCursor::EndOfBlock);
-    textCursor().insertText("\n");
+//    textCursor().insertText("\n");
 }
 
 void TextEdit::moveLineDownUp(bool up)
@@ -1784,12 +1785,12 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 
                 painter.drawText(0, top,
                                  lineNumberArea->width(), document()->documentLayout()->blockBoundingRect(block).height(),
-                                 Qt::AlignVCenter | Qt::AlignHCenter, QString::number(blockNumber + 1));
+                                 Qt::AlignVCenter | Qt::AlignHCenter, QString::number(blockNumber + 1 + m_nPageStartLine));
                // qDebug() << ".........." << document()->documentLayout()->blockBoundingRect(block).width();
             } else {
                 painter.drawText(0, top,
                                  lineNumberArea->width(), document()->documentLayout()->blockBoundingRect(block).height(),
-                                 /*Qt::AlignVCenter |*/ Qt::AlignHCenter, QString::number(blockNumber + 1));
+                                 /*Qt::AlignVCenter |*/ Qt::AlignHCenter, QString::number(blockNumber + 1 + m_nPageStartLine));
             }
         }
 
@@ -1961,7 +1962,7 @@ void TextEdit::updateLineNumber()
 {
     // Update line number painter.
 
-    int blockSize = QString::number(blockCount()).size();
+    int blockSize = QString::number(m_nBlockCount).size();
 
 //    m_pLeftAreaWidget->setFixedWidth(23 + blockSize * fontMetrics().width('9') + m_lineNumberPaddingX * 4);
 
@@ -1987,7 +1988,7 @@ void TextEdit::updateLineNumber()
 
 void TextEdit::updateWordCount()
 {
-    m_wrapper->bottomBar()->updateWordCount(characterCount());
+    m_wrapper->bottomBar()->updateWordCount(m_nCharacterCount);
 }
 
 void TextEdit::handleScrollFinish()
@@ -3412,7 +3413,7 @@ int TextEdit::getLinePosByLineNum(int iLine)
 
 void TextEdit::setIsFileOpen()
 {
-    m_bIsFileOpen = true;
+    m_bIsSetText = true;
     QStringList bookmarkList = readHistoryRecordofBookmark();
     QStringList filePathList = readHistoryRecordofFilePath();
     QList<int> linesList;
@@ -3438,9 +3439,14 @@ void TextEdit::setIsFileOpen()
     }
 }
 
+void TextEdit::setTextStart()
+{
+    m_bIsSetText = true;
+}
+
 void TextEdit::setTextFinished()
 {
-    m_bIsFileOpen = false;
+    m_bIsSetText = false;
     m_nLines = blockCount();
 }
 
@@ -3699,7 +3705,7 @@ void TextEdit::markSelectWord()
     }
 }
 
-void TextEdit::updateMark(int from, int charsRemoved, int charsAdded)
+void TextEdit::onUpdateMark(int from, int charsRemoved, int charsAdded)
 {
     Q_UNUSED(charsRemoved);
 
@@ -3709,7 +3715,7 @@ void TextEdit::updateMark(int from, int charsRemoved, int charsAdded)
         textCursor().removeSelectedText();
     }
 
-    if (m_bIsFileOpen) {
+    if (m_bIsSetText) {
         return;
     }
 
@@ -3824,6 +3830,65 @@ void TextEdit::updateMark(int from, int charsRemoved, int charsAdded)
     }
     renderAllSelections();
 }
+
+void TextEdit::setPageStartLine(int nLine)
+{
+    m_nPageStartLine = nLine;
+}
+
+void TextEdit::setBlockCount(int nBlockCount)
+{
+    m_nBlockCount = nBlockCount;
+}
+
+void TextEdit::setCharacterCount(int nCharacterCount)
+{
+    m_nCharacterCount = nCharacterCount;
+}
+
+void TextEdit::setCurrentPageNumber(int nPageNumber)
+{
+    m_nPageNumber = nPageNumber;
+}
+
+QMap<int, QString> TextEdit::getModifyRecord()
+{
+    return m_mapModifyRecord;
+}
+
+void TextEdit::onUpdateCharCount(int from, int charsRemoved, int charsAdded)
+{
+    Q_UNUSED(from);
+
+    if (m_bIsSetText) {
+        return;
+    }
+//    QTextCursor cursor = textCursor();
+//    cursor.setPosition(from,QTextCursor::KeepAnchor);
+
+    QString qstrModifyText = document()->toPlainText();
+//    qDebug() << "from" << from << textCursor().position() << qstrModifyText;
+    if (m_bIsInputMethodDuplication) {
+        if (m_qstrCommitStringDuplication.isEmpty() && charsRemoved > 0) {
+            m_nCharacterCount = m_nCharacterCount - m_qstrCommitStringDuplication.count();
+        } else {
+            m_nCharacterCount = m_nCharacterCount + m_qstrCommitStringDuplication.count();
+            m_bIsInputMethodDuplication = false;
+            m_qstrCommitStringDuplication.clear();
+        }
+    } else {
+        if (charsRemoved > 0) {
+            m_nCharacterCount = m_nCharacterCount - charsRemoved;
+        } else {
+            m_nCharacterCount = m_nCharacterCount + charsAdded;
+        }
+    }
+
+    m_mapModifyRecord.insert(m_nPageNumber,qstrModifyText);
+    qDebug() << "from" << m_nPageNumber << m_mapModifyRecord.count();
+    updateWordCount();
+}
+
 void TextEdit::completionWord(QString word)
 {
     QString wordAtCursor = getWordAtCursor();
@@ -4345,7 +4410,9 @@ void TextEdit::dropEvent(QDropEvent *event)
 void TextEdit::inputMethodEvent(QInputMethodEvent *e)
 {
     m_bIsInputMethod = true;
+    m_bIsInputMethodDuplication = m_bIsInputMethod;
     m_qstrCommitString = e->commitString();
+    m_qstrCommitStringDuplication = m_qstrCommitString;
     if (!m_readOnlyMode && e->commitString() != "") {
         QTextEdit::inputMethodEvent(e);
     }

@@ -26,6 +26,7 @@
 
 #include <QCoreApplication>
 #include <QApplication>
+#include <QAbstractTextDocumentLayout>
 #include <QSaveFile>
 #include <QScrollBar>
 #include <QScroller>
@@ -33,6 +34,7 @@
 #include <QTimer>
 #include <QDir>
 #include "drecentmanager.h"
+#include <QDebug>
 
 DCORE_USE_NAMESPACE
 
@@ -47,11 +49,15 @@ EditWrapper::EditWrapper(QWidget *parent)
       m_isRefreshing(false),
       m_waringNotices(new WarningNotices)
 {
+    m_pScrollBar = new QScrollBar(this);
+    m_pScrollBar->setFixedWidth(15);
+    connect(m_pScrollBar,&QScrollBar::valueChanged,this,&EditWrapper::onScrollChanged);
     // Init layout and widgets.
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(0);
     m_layout->addWidget(m_textEdit->m_pLeftAreaWidget);
     m_layout->addWidget(m_textEdit);
+    m_layout->addWidget(m_pScrollBar);
 
     m_bottomBar->setHighlightMenu(m_textEdit->getHighlightMenu());
     m_textEdit->setWrapper(this);
@@ -66,6 +72,8 @@ EditWrapper::EditWrapper(QWidget *parent)
     connect(m_textEdit, &TextEdit::cursorModeChanged, this, &EditWrapper::handleCursorModeChanged);
     connect(m_textEdit, &TextEdit::hightlightChanged, this, &EditWrapper::handleHightlightChanged);
     connect(m_textEdit, &TextEdit::textChanged, this, &EditWrapper::slotTextChange);
+    connect(m_textEdit->verticalScrollBar(), &QScrollBar::valueChanged, this, &EditWrapper::onValueChanged);
+    connect(m_textEdit->verticalScrollBar(), &QScrollBar::rangeChanged, this, &EditWrapper::onRangeChanged);
 
     connect(m_waringNotices, &WarningNotices::closeButtonClicked, m_waringNotices, &WarningNotices::closeBtnClicked);
     connect(m_waringNotices, &WarningNotices::reloadBtnClicked, this, &EditWrapper::refresh);
@@ -87,7 +95,7 @@ void EditWrapper::openFile(const QString &filepath)
 {
     // update file path.
     updatePath(filepath);
-    detectEndOfLine();
+//    detectEndOfLine();
 
     m_textEdit->setIsFileOpen();
     m_isLoadFinished = false;
@@ -212,7 +220,20 @@ bool EditWrapper::saveFile()
     }
 
     //auto append new line char to end of file when file's format is Linux/MacOS
-    QString fileContent = m_textEdit->toPlainText();
+    QMap<int,QString> mapModifyRecord = m_textEdit->getModifyRecord();
+
+    for (QMap<int,QString>::iterator itor = mapModifyRecord.begin();itor != mapModifyRecord.end();itor++) {
+        m_listPartDate.replace(itor.key(),itor.value());
+    }
+
+
+    QString fileContent = "";
+
+    for (int i = 0;i < m_listPartDate.count();i++) {
+        fileContent += m_listPartDate.value(i) + "\n";
+    }
+
+    fileContent.remove(fileContent.count() - 1,1);
 
     if (m_endOfLineMode == eolUnix) {
         if (!fileContent.endsWith("\n"))
@@ -624,6 +645,154 @@ void EditWrapper::onFileClosed()
     m_textEdit->clearBlack();
 }
 
+void EditWrapper::onScrollChanged(int value)
+{
+    int nShowParts = qCeil(value/m_nVscrollBarMapValue);
+
+    if (nShowParts == 0) {
+        nShowParts = 1;
+    }
+
+    int step = 0;
+//    if (m_nOldExtraVscrollValue < value) {
+//        m_nOldExtraVscrollValue = value;
+
+        if (nShowParts <= m_listPartDate.count()) {
+            if (m_nCurrShowParts != nShowParts - 1) {
+                m_textEdit->setTextStart();
+                m_textEdit->setPageStartLine(m_listPartBlockCountSum.value(nShowParts - 2));
+                m_textEdit->setPlainText(m_listPartDate.value(nShowParts - 1));
+                m_textEdit->setCurrentPageNumber(nShowParts - 1);
+                m_nCurrShowParts = nShowParts - 1;
+                m_textEdit->setTextFinished();
+                qDebug() << "nShowParts" << m_nCurrShowParts << m_listPartBlockCountSum.count() << m_listPartBlockCountSum.value(nShowParts - 1);
+            }
+
+            step = qCeil(m_textEdit->verticalScrollBar()->maximum()/m_nVscrollBarMapValue);
+            m_textEdit->verticalScrollBar()->setValue(step * (value -  m_nCurrShowParts * m_nVscrollBarMapValue));
+            qDebug() << "nShowParts" << nShowParts << m_textEdit->verticalScrollBar()->maximum() << step << m_listPartDate.count();
+        }
+//    }
+}
+
+void EditWrapper::onValueChanged(int value)
+{
+//    m_pScrollBar->setValue(value*m_nVscrollBarMapValue);
+//    if (value == m_listPartBlockCountSum.value(m_nCurrShowParts)) {
+//        m_textEdit->setTextStart();
+//        m_textEdit->setPlainText(m_listPartDate.value(m_nCurrShowParts));
+//        m_textEdit->setTextFinished();
+//    }
+//      if (value > m_nOldVscrollValue) {
+
+//    if (m_bIsScrollDown) {
+//        if (m_nCurrShowParts == 0) {
+//            m_nVscrollValueSum = m_nVscrollBarValue;
+//            if (!m_mapVscrollRange.contains(m_nCurrShowParts)) {
+//                m_mapVscrollRange.insert(m_nCurrShowParts,m_nVscrollValueSum);
+//            }
+//        }
+
+//        if (m_nCurrShowParts == m_listPartDate.count() - 1) {
+//            m_nVscrollValueSum += m_nVscrollBarValue;
+//        }
+
+//        if (value == m_nVscrollBarValue && m_nCurrShowParts + 1 <= m_listPartDate.count() - 1) {
+//            qDebug() << "onValueChanged" << m_nCurrShowParts + 1 << m_listPartDate.count()  << m_nVscrollBarValue;
+//            m_nVscrollValueSum += m_nVscrollBarValue;
+//            m_nCurrShowParts = m_nCurrShowParts + 1;
+//            m_mapVscrollRange.insert(m_nCurrShowParts,m_nVscrollValueSum);
+//            for (QMap<int,int>::iterator it = m_mapVscrollRange.begin();it != m_mapVscrollRange.end();it++) {
+//                 qDebug() << it.key() << it.value();
+//            }
+
+//            if (m_nCurrShowParts == m_listPartDate.count() - 1) {
+//                m_nDefVscrollValue = m_nVscrollValueSum;
+//                qDebug() << "onValueChanged**************" << m_nDefVscrollValue;
+//                //m_textEdit->verticalScrollBar()->setMaximum(m_nDefVscrollValue);
+//                //m_pScrollBar->setMaximum(m_nDefVscrollValue);
+//            }
+
+//          if (/*!m_bIsSetText &&*/ value >= m_nVscrollBarValue && m_nCurrShowParts < m_listPartDate.count() - 1) {
+//              qDebug() << "value > m_nOldVscrollValue" << value << m_nOldVscrollValue << m_nCurrShowParts << m_nVscrollValueSum;
+//              m_nVscrollValueSum += m_nVscrollBarValue;
+//              m_nCurrShowParts = m_nCurrShowParts +1;
+//              m_nOldVscrollValue = 0;
+//              m_bIsSetText = true;
+////              m_textEdit->setPlainText(m_listPartDate.value(m_nCurrShowParts));
+//              qDebug() << "value > m_nOldVscrollValue" << value << m_nOldVscrollValue << m_nCurrShowParts << m_nVscrollValueSum;
+//          } else {
+//              qDebug() << "else" << m_nOldVscrollValue;
+//              m_nOldVscrollValue = value;
+//          }
+//        } else if (value < m_nOldVscrollValue) {
+
+//          if (!m_bIsSetText && value == 0 && m_nCurrShowParts > 0 && m_nOldVscrollValue != 0) {
+//              qDebug() << "value < m_nOldVscrollValue" << value << m_nOldVscrollValue << m_nCurrShowParts;
+//              m_nCurrShowParts = m_nCurrShowParts - 1;
+//              m_bIsSetText = true;
+//              m_textEdit->setPlainText(m_listPartDate.value(m_nCurrShowParts));
+//              m_nOldVscrollValue = 0;
+//          } else {
+//              m_nOldVscrollValue = value;
+//          }
+//        }
+//    }
+
+//        m_textEdit->verticalScrollBar()->setMaximum()
+
+
+
+    //qDebug() << "=============" << m_textEdit->verticalScrollBar()->maximum();
+}
+
+void EditWrapper::onRangeChanged(int min, int max)
+{      
+//    if (max != m_nVscrollBarValue) {
+//        m_nVscrollBarValue = max;
+//        if (m_nCurrShowParts == 0) {
+//            m_nVscrollValueSum = m_nVscrollBarValue;
+//        }
+
+//        m_pScrollBar->setMaximum(m_nVscrollValueSum);
+
+//        if (m_nVscrollValueSum == m_pScrollBar->maximum()) {
+//            m_pScrollBar->setValue(m_nVscrollBarValue);
+//        }
+
+        //m_textEdit->verticalScrollBar()->setMaximum(m_nVscrollValueSum);
+//        qDebug() << m_nVscrollBarValue << m_nVscrollValueSum << m_textEdit->verticalScrollBar()->minimum()
+//                 << m_textEdit->verticalScrollBar()->maximum();
+//    } else {
+//        if (m_nCurrShowParts != 0) {
+//            m_pScrollBar->setMinimum(m_nVscrollBarValue);
+//        }
+//        m_pScrollBar->setMaximum(m_nVscrollValueSum);
+//        qDebug() << m_nVscrollBarValue << m_nVscrollValueSum;
+//    }
+//    if (max != m_nDefVscrollValue) {
+//    if (max != m_mapVscrollRange.value(m_nCurrShowParts)) {
+//        m_nVscrollBarValue = max;
+//    }
+//        //m_textEdit->verticalScrollBar()->setMaximum(m_nDefVscrollValue);
+//        if (m_mapVscrollRange.count() == 1) {
+//            m_pScrollBar->setRange(0,m_mapVscrollRange.value(m_nCurrShowParts));
+//            qDebug() << "=============" << m_mapVscrollRange.value(m_nCurrShowParts);
+//        } else if (m_mapVscrollRange.count() > 1) {
+//            m_pScrollBar->setRange(m_mapVscrollRange.value(m_nCurrShowParts - 1),m_mapVscrollRange.value(m_nCurrShowParts));
+//            qDebug() << "=============" << m_mapVscrollRange.value(m_nCurrShowParts - 1);
+//            qDebug() << "=============" << m_mapVscrollRange.value(m_nCurrShowParts);
+//            for (QMap<int,int>::iterator it = m_mapVscrollRange.begin();it != m_mapVscrollRange.end();it++) {
+//                 qDebug() << min << max;
+//            }
+//        }
+//        else {
+//            m_pScrollBar->setMaximum(m_nDefVscrollValue);
+//        }
+
+//    }
+}
+
 void EditWrapper::detectEndOfLine()
 {
     QFile file(m_textEdit->filepath);
@@ -670,7 +839,7 @@ void EditWrapper::handleFileLoadFinished(const QByteArray &encode,const QString 
 {
     // restore mouse style.
     // QApplication::restoreOverrideCursor();
-
+    qDebug() << "****************1" << QTime::currentTime();
     if (!Utils::isDraftFile(m_textEdit->filepath)) {
         DRecentData data;
         data.appName = "Deepin Editor";
@@ -686,12 +855,99 @@ void EditWrapper::handleFileLoadFinished(const QByteArray &encode,const QString 
     }
     setTextCodec(encode);
 
+    int nLeftPosition = content.indexOf("\n");
+    int nRightPosition = content.indexOf("\n",nLeftPosition + 1);
+    QString lineText = content.mid(0,nLeftPosition + 1);
+
+    int nPartCount = lineText.count();
+    int nCountValue = 1;
+    int nRCount = 0;
+    int nRound = 1;
+
+    if (lineText.contains("\r")) {
+        nRCount++;
+    }
+
+    QString lineTextSum = lineText;
+    int nPageChars = 100000;
+
+    while (nRightPosition != -1) {
+        lineText = content.mid(nLeftPosition + 1,nRightPosition - nLeftPosition);
+        if (lineText.contains("\r")) {
+            nRCount++;
+        }
+        lineTextSum += lineText;
+        nPartCount += lineText.count();
+        nRound++;
+
+        if (nPartCount >= nCountValue*nPageChars) {
+            if (lineText.contains("\r\n")) {
+                lineTextSum.remove(lineTextSum.count()-2,2);
+            } else if (lineText.contains("\r") || lineText.contains("\n")) {
+                lineTextSum.remove(lineTextSum.count()-1,1);
+            }
+
+            m_listPartDate << lineTextSum;
+            m_listPartBlockCountSum << nRound;
+            lineTextSum.clear();
+            nCountValue++;
+        }
+        nLeftPosition = nRightPosition;
+        nRightPosition = content.indexOf("\n",nRightPosition + 1);
+    }
+    lineText = content.mid(nLeftPosition + 1,content.count() - nLeftPosition - 1);
+    lineTextSum += lineText;
+    nPartCount += lineText.count();
+    nRound++;
+    qDebug() << nLeftPosition + 1 << content.count() - nLeftPosition - 1 << lineText << nRound;
+    if (nPartCount < nCountValue*nPageChars) {
+        if (lineText.contains("\r")) {
+            nRCount++;
+        }
+        if (lineText.contains("\r\n")) {
+            lineTextSum.remove(lineTextSum.count()-2,2);
+        } else if (lineText.contains("\r") || lineText.contains("\n")) {
+            lineTextSum.remove(lineTextSum.count()-1,1);
+        }
+        m_listPartDate << lineTextSum;
+        m_listPartBlockCountSum << nRound;
+    }
+
     // set text.
     m_textEdit->loadHighlighter();
-    m_textEdit->setPlainText(content);
-    m_textEdit->setTextFinished();
-//    m_textEdit->clearBlack();
+    m_nCurrShowParts = 0;
+    m_bIsSetText = true;
+//    QEventLoop loop;
+    m_nPageStartLine = 0;
+    m_textEdit->setBlockCount(nRound);
+    m_textEdit->setPlainText(m_listPartDate.value(m_nPageStartLine));
+//    qDebug() << "****************2" << QTime::currentTime() << m_listPartDate.value(m_nPageStartLine);
+    m_textEdit->setCurrentPageNumber(0);
+    m_textEdit->setCharacterCount(content.count() - nRCount);
+    m_textEdit->setPageStartLine(m_nPageStartLine);
+//    QTimer::singleShot(5, &loop, SLOT(quit()));
+//    loop.exec();
+    m_nOldVscrollValue = 0;
+    m_nOldExtraVscrollValue = 0;
+//    m_nVscrollBarValue = m_textEdit->verticalScrollBar()->maximum();
+//    m_textEdit->verticalScrollBar()->setMaximum(nRound/m_textEdit->fontMetrics().height());
 
+    if (m_listPartDate.count() < 100) {
+        m_nVscrollBarMapValue = 10;
+    } else if (m_listPartDate.count() > 100 && m_listPartDate.count() < 10000) {
+        m_nVscrollBarMapValue = 100;
+    } else {
+        m_nVscrollBarMapValue = 1000;
+    }
+    m_pScrollBar->setRange(0,m_listPartDate.count()*m_nVscrollBarMapValue);
+    qDebug() << "****************3" << QTime::currentTime() << m_nVscrollBarValue << m_listPartDate.last().count("\n");;
+//    m_textEdit->setPlainText(content);
+    m_textEdit->setTextFinished();
+    qDebug() << "****************4" << m_textEdit->verticalScrollBar()->maximum();
+//    m_nDefVscrollValue = nRound*m_textEdit->fontMetrics().height();
+//    m_pScrollBar->setMaximum(m_nDefVscrollValue);
+//    m_textEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+//    m_textEdit->clearBlack();
     // update status.
     m_textEdit->setModified(false);
 //    m_textEdit->moveToStart();
