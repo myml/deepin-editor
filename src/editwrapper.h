@@ -138,7 +138,6 @@ private:
     int m_nVscrollBarMapValue;
     int m_nPageStartLine;
 
-
 public slots:
     void slotTextChange();
 };

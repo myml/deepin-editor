@@ -43,30 +43,27 @@ void FileLoadThread::run()
 {
     QFile file(m_filePath);
 
-    if (file.open(QIODevice::ReadOnly)) {
-        // reads all remaining data from the file.
-        QByteArray fileContent = file.readAll();
+        uchar *pContent = nullptr;
+        QString content = "";
 
-        // read the encode.
-        QByteArray encode = Utils::detectEncode(fileContent);
-        if(encode =="Big5")
-        {
-            encode="gb18030";
-        }
-        file.close();
         if (file.open(QIODevice::ReadOnly)) {
-            QTextStream stream(&fileContent);
-            stream.setCodec(encode);
-            QString content = stream.readAll();
+            // reads all remaining data from the file.
+            QByteArray fileContent = file.read(1024);
 
-            emit loadFinished(encode, content);
+            // read the encode.
+            QByteArray encode = Utils::detectEncode(fileContent);
+            if(encode =="Big5")
+            {
+                encode="gb18030";
             }
 
-            file.close();
+            pContent = file.map(0,file.size());
+
+            if (pContent) {
+                content = QString::fromUtf8((char*)pContent,file.size());
+                emit loadFinished(encode, content);
+            }
             emit toTellFileClosed();
         }
-        else {
-            file.close();
-        }
-
+        file.close();
 }

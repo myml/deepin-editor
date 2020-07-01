@@ -41,6 +41,7 @@
 #include <DSettingsGroup>
 #include <DSettingsOption>
 #include <DSettings>
+#include <QUndoCommand>
 #include <QClipboard>
 #include <QFileInfo>
 #include <QDebug>
@@ -84,6 +85,7 @@ TextEdit::TextEdit(QWidget *parent)
       m_wrapper(nullptr),
      m_highlighter(new KSyntaxHighlighting::SyntaxHighlighter(document()))
 {
+    m_bIsModfied = false;
     m_nLines = 0;
     m_nBookMarkHoverLine = -1;
     m_bIsSetText = false;
@@ -124,9 +126,11 @@ TextEdit::TextEdit(QWidget *parent)
         updateWordCount();
     });
     connect(this, &QTextEdit::cursorPositionChanged, this, &TextEdit::cursorPositionChanged);
-    connect(document(), &QTextDocument::modificationChanged, this, &TextEdit::setModified);
+//    connect(document(), &QTextDocument::modificationChanged, this, &TextEdit::setModified);
     connect(document(), &QTextDocument::contentsChange, this, &TextEdit::onUpdateMark);
     connect(document(), &QTextDocument::contentsChange, this, &TextEdit::onUpdateCharCount);
+//    connect(document(), &QTextDocument::undoCommandAdded, this, &TextEdit::onUpdateMark);
+    QUndoCommand command;
 
     m_foldCodeShow = new ShowFlodCodeWidget(this);
     m_foldCodeShow->setVisible(false);
@@ -2058,7 +2062,7 @@ void TextEdit::cursorPositionChanged()
 
     if (m_wrapper) {
         QTextCursor cursor = textCursor();
-        m_wrapper->bottomBar()->updatePosition(cursor.blockNumber() + 1,
+        m_wrapper->bottomBar()->updatePosition(cursor.blockNumber() + 1 + m_nPageStartLine,
                                                cursor.columnNumber() + 1);
     }
 }
@@ -2453,7 +2457,7 @@ void TextEdit::setSettings(Settings *keySettings)
 void TextEdit::setModified(bool modified)
 {
     document()->setModified(modified);
-
+    m_bIsModfied = modified;
     emit modificationChanged(filepath, modified);
 }
 
@@ -3856,6 +3860,11 @@ QMap<int, QString> TextEdit::getModifyRecord()
     return m_mapModifyRecord;
 }
 
+bool TextEdit::getIsModified()
+{
+    return m_bIsModfied;
+}
+
 void TextEdit::onUpdateCharCount(int from, int charsRemoved, int charsAdded)
 {
     Q_UNUSED(from);
@@ -3885,8 +3894,9 @@ void TextEdit::onUpdateCharCount(int from, int charsRemoved, int charsAdded)
     }
 
     m_mapModifyRecord.insert(m_nPageNumber,qstrModifyText);
-    qDebug() << "from" << m_nPageNumber << m_mapModifyRecord.count();
+    qDebug() << "from" << from << m_nPageNumber << m_mapModifyRecord.count();
     updateWordCount();
+    setModified(true);
 }
 
 void TextEdit::completionWord(QString word)

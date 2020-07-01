@@ -234,6 +234,7 @@ public:
     void setCharacterCount(int nCharacterCount);
     void setCurrentPageNumber(int nPageNumber);
     QMap<int,QString> getModifyRecord();
+    bool getIsModified();
 
 public:
     bool bIsSetLineNumberWidth = true;
@@ -475,6 +476,7 @@ private:
     int m_nCharacterCount;
     int m_nPageNumber;
     QMap<int,QString> m_mapModifyRecord;
+    bool m_bIsModfied;
 };
 
 #endif

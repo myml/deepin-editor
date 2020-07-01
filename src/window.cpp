@@ -480,7 +480,7 @@ void Window::closeTab()
     }
 
     // this property holds whether the document has been modified by the user
-    bool isModified = wrapper->textEditor()->document()->isModified();
+    bool isModified = wrapper->textEditor()->getIsModified();
 
     // document has been modified or unsaved draft document.
     // need to prompt whether to save.
@@ -715,7 +715,7 @@ void Window::openFile()
 bool Window::saveFile()
 {
     const QString &currentPath = m_tabbar->currentPath();
-    const QString &currentDir = QFileInfo(currentPath).absolutePath();
+//    const QString &currentDir = QFileInfo(currentPath).absolutePath();
     const QFileInfo fileInfo(currentPath);
     bool isBlankFile = fileInfo.dir().absolutePath() == m_blankFileDir;
 
@@ -1440,7 +1440,7 @@ void Window::handleTabsClosed(QStringList tabList)
             EditWrapper *wrapper = m_wrappers.value(path);
             bool isBlankFile = QFileInfo(path).dir().absolutePath() == m_blankFileDir;
             bool isContentEmpty = wrapper->textEditor()->toPlainText().isEmpty();
-            bool isModified = wrapper->textEditor()->document()->isModified();
+            bool isModified = wrapper->textEditor()->getIsModified();
 
             if ((isBlankFile && !isContentEmpty) ||
                     (!isBlankFile && isModified)) {
@@ -1909,7 +1909,7 @@ void Window::closeEvent(QCloseEvent *e)
             continue;
         }
 
-        if (wrapper->textEditor()->document()->isModified()) {
+        if (wrapper->textEditor()->getIsModified()) {
             needSaveList << wrapper;
         }
     }
@@ -1924,7 +1924,7 @@ void Window::closeEvent(QCloseEvent *e)
                 // save files.
                 for (EditWrapper *wrapper : m_wrappers) {
 
-                    if (!wrapper->textEditor()->document()->isModified()) {
+                    if (!wrapper->textEditor()->getIsModified()) {
                         disconnect(wrapper->textEditor(), 0, this, 0);
                         delete wrapper;
                     } else {

@@ -1,4 +1,5 @@
 #include "warningnotices.h"
+#include <QDebug>
 
 
 WarningNotices::WarningNotices(MessageType notifyType)
@@ -33,7 +34,7 @@ WarningNotices::WarningNotices(MessageType notifyType)
 
 WarningNotices::~WarningNotices()
 {
-
+    qDebug() << "~WarningNotices()";
 }
 
 void WarningNotices::setReloadBtn()

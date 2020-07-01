@@ -135,27 +135,41 @@ bool EditWrapper::saveAsFile(const QString &newFilePath, QByteArray encodeName)
     }
 
     //auto append new line char to end of file when file's format is Linux/MacOS
-    QString fileContent = m_textEdit->toPlainText();
+    QMap<int,QString> mapModifyRecord = m_textEdit->getModifyRecord();
 
-    if (m_endOfLineMode == eolUnix) {
-        if (!fileContent.endsWith("\n"))
-        {
-            fileContent = fileContent.append(QChar('\n'));
-        }
+    for (QMap<int,QString>::iterator itor = mapModifyRecord.begin();itor != mapModifyRecord.end();itor++) {
+        m_listPartDate.replace(itor.key(),itor.value());
     }
-    else if (m_endOfLineMode == eolDos)
-    {
-        if (!fileContent.endsWith("\r\n"))
-        {
-            fileContent = fileContent.append(QChar('\r')).append(QChar('\n'));
-        }
+
+
+    QString fileContent = "";
+
+    for (int i = 0;i < m_listPartDate.count();i++) {
+        fileContent += m_listPartDate.value(i) + "\n";
     }
-    else if (m_endOfLineMode == eolMac) {
-        if (!fileContent.endsWith("\r"))
-        {
-            fileContent = fileContent.append(QChar('\r'));
-        }
-    }
+
+    fileContent.remove(fileContent.count() - 1,1);
+//    QString fileContent = m_textEdit->toPlainText();
+
+//    if (m_endOfLineMode == eolUnix) {
+//        if (!fileContent.endsWith("\n"))
+//        {
+//            fileContent = fileContent.append(QChar('\n'));
+//        }
+//    }
+//    else if (m_endOfLineMode == eolDos)
+//    {
+//        if (!fileContent.endsWith("\r\n"))
+//        {
+//            fileContent = fileContent.append(QChar('\r')).append(QChar('\n'));
+//        }
+//    }
+//    else if (m_endOfLineMode == eolMac) {
+//        if (!fileContent.endsWith("\r"))
+//        {
+//            fileContent = fileContent.append(QChar('\r'));
+//        }
+//    }
 
     QTextStream stream(&file);
     stream.setCodec(pSaveAsFileCodec);
@@ -235,25 +249,25 @@ bool EditWrapper::saveFile()
 
     fileContent.remove(fileContent.count() - 1,1);
 
-    if (m_endOfLineMode == eolUnix) {
-        if (!fileContent.endsWith("\n"))
-        {
-            fileContent = fileContent.append(QChar('\n'));
-        }
-    }
-    else if (m_endOfLineMode == eolDos)
-    {
-        if (!fileContent.endsWith("\r\n"))
-        {
-            fileContent = fileContent.append(QChar('\r')).append(QChar('\n'));
-        }
-    }
-    else if (m_endOfLineMode == eolMac) {
-        if (!fileContent.endsWith("\r"))
-        {
-            fileContent = fileContent.append(QChar('\r'));
-        }
-    }
+//    if (m_endOfLineMode == eolUnix) {
+//        if (!fileContent.endsWith("\n"))
+//        {
+//            fileContent = fileContent.append(QChar('\n'));
+//        }
+//    }
+//    else if (m_endOfLineMode == eolDos)
+//    {
+//        if (!fileContent.endsWith("\r\n"))
+//        {
+//            fileContent = fileContent.append(QChar('\r')).append(QChar('\n'));
+//        }
+//    }
+//    else if (m_endOfLineMode == eolMac) {
+//        if (!fileContent.endsWith("\r"))
+//        {
+//            fileContent = fileContent.append(QChar('\r'));
+//        }
+//    }
 
     QTextStream stream(&file);
     stream.setCodec(m_textCodec);
@@ -647,17 +661,30 @@ void EditWrapper::onFileClosed()
 
 void EditWrapper::onScrollChanged(int value)
 {
-    int nShowParts = qCeil(value/m_nVscrollBarMapValue);
+    int nShowParts = value/m_nVscrollBarMapValue;
 
-    if (nShowParts == 0) {
-        nShowParts = 1;
-    }
+//    if (nShowParts == 0) {
+//        nShowParts = 1;
+//    }
+//    nShowParts += 1;
 
     int step = 0;
 //    if (m_nOldExtraVscrollValue < value) {
 //        m_nOldExtraVscrollValue = value;
 
-        if (nShowParts <= m_listPartDate.count()) {
+        if (nShowParts < m_listPartDate.count()) {
+            if (m_nCurrShowParts != nShowParts) {
+                m_textEdit->setTextStart();
+                m_textEdit->setPageStartLine(m_listPartBlockCountSum.value(nShowParts - 1));
+                m_textEdit->setPlainText(m_listPartDate.value(nShowParts));
+                m_textEdit->setCurrentPageNumber(nShowParts);
+                m_nCurrShowParts = nShowParts;
+                m_textEdit->setTextFinished();
+                //qDebug() << "nShowParts" << m_nCurrShowParts << m_listPartBlockCountSum.count() << m_listPartBlockCountSum.value(nShowParts - 1);
+                step = qCeil(m_textEdit->verticalScrollBar()->maximum()/m_nVscrollBarMapValue);
+                m_textEdit->verticalScrollBar()->setValue(step * (value - m_nCurrShowParts * m_nVscrollBarMapValue));
+            }
+        } else if (nShowParts == m_listPartDate.count()) {
             if (m_nCurrShowParts != nShowParts - 1) {
                 m_textEdit->setTextStart();
                 m_textEdit->setPageStartLine(m_listPartBlockCountSum.value(nShowParts - 2));
@@ -665,85 +692,39 @@ void EditWrapper::onScrollChanged(int value)
                 m_textEdit->setCurrentPageNumber(nShowParts - 1);
                 m_nCurrShowParts = nShowParts - 1;
                 m_textEdit->setTextFinished();
-                qDebug() << "nShowParts" << m_nCurrShowParts << m_listPartBlockCountSum.count() << m_listPartBlockCountSum.value(nShowParts - 1);
+                //qDebug() << "nShowParts" << m_nCurrShowParts << m_listPartBlockCountSum.count() << m_listPartBlockCountSum.value(nShowParts - 1);
+                step = qCeil(m_textEdit->verticalScrollBar()->maximum()/m_nVscrollBarMapValue);
+                m_textEdit->verticalScrollBar()->setValue(step * (value - m_nCurrShowParts * m_nVscrollBarMapValue));
             }
-
-            step = qCeil(m_textEdit->verticalScrollBar()->maximum()/m_nVscrollBarMapValue);
-            m_textEdit->verticalScrollBar()->setValue(step * (value -  m_nCurrShowParts * m_nVscrollBarMapValue));
-            qDebug() << "nShowParts" << nShowParts << m_textEdit->verticalScrollBar()->maximum() << step << m_listPartDate.count();
         }
+
+        qDebug() << "nShowParts" << value << nShowParts << m_pScrollBar->maximum() << step << m_listPartDate.count();
 //    }
 }
 
 void EditWrapper::onValueChanged(int value)
 {
-//    m_pScrollBar->setValue(value*m_nVscrollBarMapValue);
-//    if (value == m_listPartBlockCountSum.value(m_nCurrShowParts)) {
-//        m_textEdit->setTextStart();
-//        m_textEdit->setPlainText(m_listPartDate.value(m_nCurrShowParts));
-//        m_textEdit->setTextFinished();
-//    }
-//      if (value > m_nOldVscrollValue) {
+    int step = qCeil(m_textEdit->verticalScrollBar()->maximum()/m_nVscrollBarMapValue);
+    qDebug() << "nShowParts0000" << value << m_nOldVscrollValue;
 
-//    if (m_bIsScrollDown) {
-//        if (m_nCurrShowParts == 0) {
-//            m_nVscrollValueSum = m_nVscrollBarValue;
-//            if (!m_mapVscrollRange.contains(m_nCurrShowParts)) {
-//                m_mapVscrollRange.insert(m_nCurrShowParts,m_nVscrollValueSum);
-//            }
-//        }
+    if (step > 0) {
+        if (value < m_nOldVscrollValue) {
+            m_nOldVscrollValue = value;
 
-//        if (m_nCurrShowParts == m_listPartDate.count() - 1) {
-//            m_nVscrollValueSum += m_nVscrollBarValue;
-//        }
+            if (value == 0 && m_nCurrShowParts != 0) {
+                m_pScrollBar->setValue(value/step + m_nCurrShowParts * m_nVscrollBarMapValue - 1);
+            }
+            qDebug() << "nShowParts111" << m_nCurrShowParts << m_pScrollBar->value();
+        } else {
+            if (value == m_textEdit->verticalScrollBar()->maximum()) {
+                m_nOldVscrollValue = 0;
+            } else {
+                m_nOldVscrollValue = value;
+            }
 
-//        if (value == m_nVscrollBarValue && m_nCurrShowParts + 1 <= m_listPartDate.count() - 1) {
-//            qDebug() << "onValueChanged" << m_nCurrShowParts + 1 << m_listPartDate.count()  << m_nVscrollBarValue;
-//            m_nVscrollValueSum += m_nVscrollBarValue;
-//            m_nCurrShowParts = m_nCurrShowParts + 1;
-//            m_mapVscrollRange.insert(m_nCurrShowParts,m_nVscrollValueSum);
-//            for (QMap<int,int>::iterator it = m_mapVscrollRange.begin();it != m_mapVscrollRange.end();it++) {
-//                 qDebug() << it.key() << it.value();
-//            }
-
-//            if (m_nCurrShowParts == m_listPartDate.count() - 1) {
-//                m_nDefVscrollValue = m_nVscrollValueSum;
-//                qDebug() << "onValueChanged**************" << m_nDefVscrollValue;
-//                //m_textEdit->verticalScrollBar()->setMaximum(m_nDefVscrollValue);
-//                //m_pScrollBar->setMaximum(m_nDefVscrollValue);
-//            }
-
-//          if (/*!m_bIsSetText &&*/ value >= m_nVscrollBarValue && m_nCurrShowParts < m_listPartDate.count() - 1) {
-//              qDebug() << "value > m_nOldVscrollValue" << value << m_nOldVscrollValue << m_nCurrShowParts << m_nVscrollValueSum;
-//              m_nVscrollValueSum += m_nVscrollBarValue;
-//              m_nCurrShowParts = m_nCurrShowParts +1;
-//              m_nOldVscrollValue = 0;
-//              m_bIsSetText = true;
-////              m_textEdit->setPlainText(m_listPartDate.value(m_nCurrShowParts));
-//              qDebug() << "value > m_nOldVscrollValue" << value << m_nOldVscrollValue << m_nCurrShowParts << m_nVscrollValueSum;
-//          } else {
-//              qDebug() << "else" << m_nOldVscrollValue;
-//              m_nOldVscrollValue = value;
-//          }
-//        } else if (value < m_nOldVscrollValue) {
-
-//          if (!m_bIsSetText && value == 0 && m_nCurrShowParts > 0 && m_nOldVscrollValue != 0) {
-//              qDebug() << "value < m_nOldVscrollValue" << value << m_nOldVscrollValue << m_nCurrShowParts;
-//              m_nCurrShowParts = m_nCurrShowParts - 1;
-//              m_bIsSetText = true;
-//              m_textEdit->setPlainText(m_listPartDate.value(m_nCurrShowParts));
-//              m_nOldVscrollValue = 0;
-//          } else {
-//              m_nOldVscrollValue = value;
-//          }
-//        }
-//    }
-
-//        m_textEdit->verticalScrollBar()->setMaximum()
-
-
-
-    //qDebug() << "=============" << m_textEdit->verticalScrollBar()->maximum();
+            m_pScrollBar->setValue(value/step + m_nCurrShowParts * m_nVscrollBarMapValue);
+        }
+    }
 }
 
 void EditWrapper::onRangeChanged(int min, int max)
