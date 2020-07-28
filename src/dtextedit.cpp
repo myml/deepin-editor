@@ -1793,6 +1793,7 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
                 .translated(0, translate_y).bottom();          //不比较，直接从上一行的底边开始绘制，即多绘制一行的行号
     }
 
+
     // Shift the starting point
     //additional_margin -= 2;
 
