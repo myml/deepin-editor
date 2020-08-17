@@ -32,7 +32,7 @@
 #include "settings.h"
 #include "tabbar.h"
 #include "thememodule/themepanel.h"
-
+#include<dprintpreviewdialog.h>
 #include <QWidget>
 #include <QStackedWidget>
 #include <QResizeEvent>

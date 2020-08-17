@@ -1249,8 +1249,8 @@ void Window::popupSettingsDialog()
 
 void Window::popupPrintDialog()
 {
-    QPrinter printer(QPrinter::HighResolution);
-    QPrintPreviewDialog preview(&printer, this);
+    DPrinter printer(QPrinter::HighResolution);
+    DPrintPreviewDialog preview( this);
 
     TextEdit *wrapper = currentWrapper()->textEditor();
     const QString &filePath = wrapper->filepath;
@@ -1266,7 +1266,7 @@ void Window::popupPrintDialog()
 
     printer.setOutputFormat(QPrinter::PdfFormat);
 
-    connect(&preview, &QPrintPreviewDialog::paintRequested, this, [ = ](QPrinter * printer) {
+    connect(&preview, &DPrintPreviewDialog::paintRequested, this, [ = ](QPrinter * printer) {
         currentWrapper()->textEditor()->print(printer);
     });
 
