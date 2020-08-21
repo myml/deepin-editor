@@ -33,7 +33,7 @@ Tabbar::Tabbar(QWidget *parent)
     : DTabBar(parent)
 {
     m_rightClickTab = -1;
-    m_bIsDragEnter = false;
+    m_bIsDrapFinish = false;
 
     installEventFilter(this);
 
@@ -116,15 +116,13 @@ void Tabbar::closeLeftTabs(const QString &filePath)
         }
         closePathList << path;
     }
-    emit closeTabs(closePathList);
 
+    emit closeTabs(closePathList);
 }
 
 void Tabbar::closeRightTabs(const QString &filePath)
 {
-
     QStringList closePathlist;
-
 
     for (int i=m_tabPaths.count()-1;i >= 0;i--) {
         m_tabPaths.value(i);
@@ -134,9 +132,8 @@ void Tabbar::closeRightTabs(const QString &filePath)
         }
         closePathlist << m_tabPaths.value(i);
     }
+
     emit closeTabs(closePathlist);
-
-
 }
 
 void Tabbar::updateTab(int index, const QString &filePath, const QString &tabName)
@@ -274,7 +271,7 @@ QMimeData* Tabbar::createMimeDataFromTab(int index, const QStyleOptionTab &optio
 {
     //qDebug() << "DragEnter";
     const QString tabName = textAt(index);
-
+    qDebug() << "createMimeDataFromTab" << tabName;
     Window *window = static_cast<Window *>(this->window());
     EditWrapper *wrapper = window->wrapper(fileAt(index));
     QMimeData *mimeData = new QMimeData;
@@ -294,21 +291,21 @@ QMimeData* Tabbar::createMimeDataFromTab(int index, const QStyleOptionTab &optio
 
 void Tabbar::insertFromMimeDataOnDragEnter(int index, const QMimeData *source)
 {
+    qDebug() << "insertFromMimeData";
     if (source == nullptr) {
         return;
     }
-//    qDebug() << "insertFromMimeDataOnDragEnter";
+
     const QString tabName = QString::fromUtf8(source->data("dedit/tabbar"));
+    qDebug() << "insertFromMimeDataOnDragEnter" << tabName;
     QVariant pVar = source->property("wrapper");
     EditWrapper *wrapper = static_cast<EditWrapper *>(pVar.value<void *>());
     Window *window = static_cast<Window *>(this->window());
-//    EditWrapper *wrapper = window->addTab();
 
     if (!wrapper) {
         return;
     }
 
-    StartManager::instance()->setDragEnter(true);
     //qDebug() << "insertFromMimeDataOnDragEnter";
     window->addTabWithWrapper(wrapper, wrapper->textEditor()->filepath, tabName, index);
     //window->currentWrapper()->textEditor()->setModified(source->property("isModified").toBool());
@@ -318,11 +315,13 @@ void Tabbar::insertFromMimeDataOnDragEnter(int index, const QMimeData *source)
 
 void Tabbar::insertFromMimeData(int index, const QMimeData *source)
 {
+    qDebug() << "insertFromMimeData";
     if (source == nullptr) {
         return;
     }
-//    qDebug() << "insertFromMimeData";
+
     const QString tabName = QString::fromUtf8(source->data("dedit/tabbar"));
+    qDebug() << "insertFromMimeData" << tabName;
     QVariant pVar = source->property("wrapper");
     EditWrapper *wrapper = static_cast<EditWrapper *>(pVar.value<void *>());
     Window *window = static_cast<Window *>(this->window());
@@ -345,26 +344,14 @@ bool Tabbar::canInsertFromMimeData(int index, const QMimeData *source) const
 
 void Tabbar::handleDragActionChanged(Qt::DropAction action)
 {
-    if (action == Qt::CopyAction) {
-//        qDebug() << "IgnoreAction";
-        Window *window = static_cast<Window *>(this->window());
-
-        if (StartManager::instance()->isDragEnter()) {
-            m_nDragIndex = currentIndex();
-            m_pWrapper = window->wrapper(fileAt(currentIndex()));
-            m_qstrDragName = currentName();
-            closeCurrentTab();
-            StartManager::instance()->setDragEnter(false);
-        }
-    } else if (action == Qt::IgnoreAction) {
-//        qDebug() << "IgnoreAction";
-        if (m_pWrapper && !m_tabPaths.contains(m_pWrapper->textEditor()->filepath)) {
-            Window *window = static_cast<Window *>(this->window());
-            window->addTabWithWrapper(m_pWrapper, m_pWrapper->textEditor()->filepath, m_qstrDragName, m_nDragIndex);
-        }
+    //qDebug() << "handleDragActionChanged";
+    // Reset cursor to Qt::ArrowCursor if drag tab to TextEditor widget.  
+    if (action == Qt::MoveAction) {
+        qDebug() << "MoveAction";
+    } else if (action == Qt::TargetMoveAction) {
+        qDebug() << "TargetMoveAction";
     }
 
-    // Reset cursor to Qt::ArrowCursor if drag tab to TextEditor widget.
     if (action == Qt::IgnoreAction) {
         if (dragIconWindow()) {
             QGuiApplication::changeOverrideCursor(Qt::ArrowCursor);
@@ -527,52 +514,64 @@ void Tabbar::showTabs()
 
 void Tabbar::handleTabReleased(int index)
 {
-    QString path = m_listOldTabPath.value(index);
-    int newIndex = m_tabPaths.indexOf(path);
-    const QString tabPath = fileAt(newIndex);
-    const QString tabName = textAt(newIndex);
-//    qDebug() << "handleTabReleased" << index << newIndex;
+    //QString path = m_listOldTabPath.value(index);
+   // int newIndex = m_tabPaths.indexOf(path);
+    const QString tabPath = fileAt(index);
+    const QString tabName = textAt(index);
+
     Window *window = static_cast<Window *>(this->window());
     EditWrapper *wrapper = window->wrapper(tabPath);
     StartManager::instance()->createWindowFromWrapper(tabName, tabPath, wrapper, wrapper->textEditor()->document()->isModified());
 
-    closeTab(newIndex);
+    closeTab(index);
+    qDebug() << "closeTab(index);" << index << index;
     // remove wrapper from window, not delete.
     window->removeWrapper(tabPath, false);
 }
 
 void Tabbar::handleTabIsRemoved(int index)
 {   
-//    qDebug() << "handleTabIsRemoved" << index;
-    const QString filePath = m_tabPaths.at(index);
-    Window *window = static_cast<Window *>(this->window());
+    int newIndex = index;
 
-    m_tabPaths.removeAt(index);
+//    if (m_bIsDrapFinish) {
+//        QString path = m_listOldTabPath.value(index);
+//        newIndex = m_tabPaths.indexOf(path);
+//        m_bIsDrapFinish = false;
+//    }
+
+    const QString filePath = m_tabPaths.at(newIndex);
+    Window *window = static_cast<Window *>(this->window());
+    qDebug() << "handleTabIsRemoved" << index << newIndex << filePath;
+    m_tabPaths.removeAt(newIndex);
+    //closeTab(newIndex);
 
     window->removeWrapper(filePath, false);
 }
 
 void Tabbar::handleTabDroped(int index, Qt::DropAction, QObject *target)
 {
-//    qDebug() << "handleTabDroped";
+    m_bIsDrapFinish = true;
+    qDebug() << "handleTabDroped";
     Tabbar *tabbar = qobject_cast<Tabbar *>(target);
-    m_pWrapper = nullptr;
 
     if (tabbar == nullptr) {
+        qDebug() << "activateWindow";
         Window *window = static_cast<Window *>(this->window());
         window->move(QCursor::pos() - window->topLevelWidget()->pos());
         window->show();
         window->activateWindow();
     } else {
-        QString path = m_listOldTabPath.value(index);
-        int newIndex = m_tabPaths.indexOf(path);
-        //qDebug() << "newIndex" << newIndex;
-        closeTab(newIndex);
+//        QString path = m_listOldTabPath.value(index);
+//        int newIndex = m_tabPaths.indexOf(path);
+//        closeTab(newIndex);
+
+//        qDebug() << "closeTab" << index << newIndex << m_tabPaths.value(newIndex);
     }
 }
 
 void Tabbar::onTabDrapStart()
 {
     m_listOldTabPath = m_tabPaths;
-//    qDebug() << "onTabDrapStart";
+    qDebug() << "onTabDrapStart";
+    //qDebug() << "onTabDrapStart";
 }

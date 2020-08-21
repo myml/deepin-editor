@@ -35,6 +35,8 @@
 #include <QDebug>
 #include <QDir>
 #include <QStandardPaths>
+#include <QKeyEvent>
+#include <QTest>
 
 Settings *Settings::m_setting = nullptr;
 Settings::Settings(QWidget *parent)
@@ -68,12 +70,6 @@ Settings::Settings(QWidget *parent)
     auto codeFlod = settings->option("base.font.codeflod");
     connect(codeFlod, &Dtk::Core::DSettingsOption::valueChanged, this, [ = ](QVariant value) {
         emit showCodeFlodFlag(value.toBool());
-    });
-
-    //添加显示空白符　梁卫东
-    auto blankCharacter = settings->option("base.font.showblankcharacter");
-    connect(blankCharacter, &Dtk::Core::DSettingsOption::valueChanged, this, [ = ](QVariant value) {
-        emit showBlankCharacter(value.toBool());
     });
 
     auto theme = settings->option("advance.editor.theme");
@@ -315,7 +311,11 @@ QPair<QWidget *, QWidget *> Settings::createKeySequenceEditHandle(QObject *obj)
 
         QString style = QString("<span style=\"color: rgba(255, 87, 54, 1);\">[%1]</span>").arg(qstrSequence);
 
-        if (bIsConflicts || sequence.toString() == "Alt+M") {
+        if (sequence.toString() == "Alt+M") {
+            bIsConflicts = true;
+        }
+
+        if (bIsConflicts) {
             if (sequence.toString() == "Alt+M") {
                 instance()->m_pDialog = instance()->createDialog(tr("This shortcut conflicts with system shortcut %1").arg(style),"",bIsConflicts);
             } else {
@@ -484,4 +484,33 @@ DDialog *Settings::createDialog(const QString &title, const QString &content, co
     }
 
     return dialog;
+}
+
+void KeySequenceEdit::keyPressEvent(QKeyEvent *e)
+{
+    if (e->key() == Qt::Key_Space) {
+        if (hasFocus()) {
+//           QMouseEvent *pressEvent, *releaseEvent;
+
+//            if (isModified()) {
+//                return DKeySequenceEdit::keyPressEvent(e);
+//            } else {
+//                clear();
+//            }
+//            QTest::mouseClick(this,Qt::LeftButton,Qt::NoModifier,mapToGlobal(this->pos())/*QPoint(,1)*/);
+            qDebug() << mapToGlobal(this->pos());
+
+//            pressEvent = new QMouseEvent(QEvent::MouseButtonPress, QPoint(1, 1), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+//            releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, QPoint(1, 1), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+//            QApplication::sendEvent(this, pressEvent);
+//            QApplication::sendEvent(this, releaseEvent);
+
+            qDebug () << "hasFocus";
+        }
+        //
+    }
+
+//    if (isModified()) {
+        return DKeySequenceEdit::keyPressEvent(e);
+//    }
 }

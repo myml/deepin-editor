@@ -12,6 +12,7 @@ QT += svg
 QT += widgets
 QT += x11extras
 QT += KCodecs
+QT += testlib
 
 TEMPLATE = app
 TARGET = deepin-editor
@@ -54,7 +55,7 @@ HEADERS += window.h \
     leftareaoftextedit.h \
     codeflodarea.h \
     showflodcodewidget.h \
-    widgets/ColorSelectWdg.h
+    widgets/keysequenceedit.h
 
 SOURCES += window.cpp \
            startmanager.cpp \
@@ -88,7 +89,7 @@ SOURCES += window.cpp \
     leftareaoftextedit.cpp \
     codeflodarea.cpp \
     showflodcodewidget.cpp \
-    widgets/ColorSelectWdg.cpp
+    widgets/keysequenceedit.cpp
 
 
 QMAKE_CXXFLAGS += -g

@@ -62,7 +62,6 @@ signals:
     void adjustTabSpaceNumber(int number);
     void adjustWordWrap(bool enable);
     void showCodeFlodFlag(bool enable);
-    void showBlankCharacter(bool enable);
     void themeChanged(const QString &theme);
     void setLineNumberShow(bool bIsShow);
     void changeWindowSize(QString mode);
@@ -96,6 +95,10 @@ public:
     {
         return m_poption;
     }
+
+protected:
+    void keyPressEvent(QKeyEvent *e) override;
+
 private:
     DTK_CORE_NAMESPACE::DSettingsOption *m_poption = nullptr;
 };

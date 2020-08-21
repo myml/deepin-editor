@@ -3,10 +3,10 @@
 ShowFlodCodeWidget::ShowFlodCodeWidget(DWidget *parent)
     : DWidget(parent)
 {
-    QVBoxLayout *pMainLayout = new QVBoxLayout();
+    QVBoxLayout *pMainLayout = new QVBoxLayout(this);
     m_pDArrowRectangle = new DFrame(this);
     m_pDArrowRectangle->setFrameRounded(true);
-    QVBoxLayout *pSubLayout = new QVBoxLayout();
+    QVBoxLayout *pSubLayout = new QVBoxLayout(this);
     m_pContentEdit = new DTextEdit(this);
     m_pContentEdit->setWordWrapMode(QTextOption::WordWrap);
     pSubLayout->addWidget(m_pContentEdit);

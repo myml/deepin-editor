@@ -197,11 +197,6 @@ bool ReplaceBar::focusNextPrevChild(bool)
 void ReplaceBar::keyPressEvent(QKeyEvent *e)
 {
     const QString &key = Utils::getKeyshortcut(e);
-    if(key=="Esc")
-    {
-        QWidget::hide();
-        emit sigReplacebarClose();
-    }
     if(m_closeButton->hasFocus()&&key=="Tab")
     {
         m_replaceLine->lineEdit()->setFocus();

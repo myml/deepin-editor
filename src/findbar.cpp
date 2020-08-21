@@ -141,11 +141,6 @@ bool FindBar::focusNextPrevChild(bool next)
 void FindBar::keyPressEvent(QKeyEvent *e)
 {
     const QString &key = Utils::getKeyshortcut(e);
-    if(key=="Esc")
-    {
-        QWidget::hide();
-        emit sigFindbarClose();
-    }
     if(m_closeButton->hasFocus()&&key=="Tab")
     {
         m_editLine->lineEdit()->setFocus();

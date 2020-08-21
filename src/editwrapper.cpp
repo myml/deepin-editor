@@ -220,20 +220,20 @@ bool EditWrapper::saveFile()
     if (m_endOfLineMode == eolUnix) {
         if (!fileContent.endsWith("\n"))
         {
-            //fileContent = fileContent.append(QChar('\n'));
+            fileContent = fileContent.append(QChar('\n'));
         }
     }
     else if (m_endOfLineMode == eolDos)
     {
         if (!fileContent.endsWith("\r\n"))
         {
-            //fileContent = fileContent.append(QChar('\r')).append(QChar('\n'));
+            fileContent = fileContent.append(QChar('\r')).append(QChar('\n'));
         }
     }
     else if (m_endOfLineMode == eolMac) {
         if (!fileContent.endsWith("\r"))
         {
-            //fileContent = fileContent.append(QChar('\r'));
+            fileContent = fileContent.append(QChar('\r'));
         }
     }
 
@@ -734,26 +734,4 @@ void EditWrapper::setLineNumberShow(bool bIsShow ,bool bIsFirstShow)
     }
     m_textEdit->bIsSetLineNumberWidth = bIsShow;
     m_textEdit->updateLineNumber();
-}
-
-//显示空白符
-void EditWrapper::setShowBlankCharacter(bool ok)
-{
-    if(ok){
-        QTextOption opts = m_textEdit->document()->defaultTextOption();
-        QTextOption::Flags flag = opts.flags();
-        flag |= QTextOption::ShowTabsAndSpaces;
-//        flag |= QTextOption::ShowLineAndParagraphSeparators;
-//        flag |= QTextOption::AddSpaceForLineAndParagraphSeparators;
-        opts.setFlags(flag);
-        m_textEdit->document()->setDefaultTextOption(opts);
-    }else {
-        QTextOption opts = m_textEdit->document()->defaultTextOption();
-        QTextOption::Flags flag = opts.flags();
-        flag &= ~QTextOption::ShowTabsAndSpaces;
-//        flag &= ~QTextOption::ShowLineAndParagraphSeparators;
-//        flag &= ~QTextOption::AddSpaceForLineAndParagraphSeparators;
-        opts.setFlags(flag);
-        m_textEdit->document()->setDefaultTextOption(opts);
-    }
 }

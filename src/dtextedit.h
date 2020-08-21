@@ -38,8 +38,7 @@
 #include <QPropertyAnimation>
 #include <QFont>
 #include <DApplicationHelper>
-#include "widgets/ColorSelectWdg.h"
-
+#include <QProxyStyle>
 
 namespace KSyntaxHighlighting {
     class SyntaxHighlighter;
@@ -55,6 +54,24 @@ enum ConvertCase { UPPER, LOWER, CAPITALIZE };
 class ShowFlodCodeWidget;
 class leftareaoftextedit;
 class EditWrapper;
+
+class CustomLineEditProxyStyle : public QProxyStyle
+{
+    Q_OBJECT
+public:
+    CustomLineEditProxyStyle() : QProxyStyle() {}
+    ~CustomLineEditProxyStyle() {}
+    virtual int pixelMetric(PixelMetric metric, const QStyleOption* option = nullptr, const QWidget* widget = nullptr) const
+    {
+        if (metric == QStyle::PM_TextCursorWidth) {
+            qDebug() << "metric == QStyle::PM_TextCursorWidth";
+            return 0;
+        }
+
+        return QProxyStyle::pixelMetric(metric, option, widget);
+    }
+};
+
 class TextEdit : public DTextEdit
 {
     Q_OBJECT
@@ -206,7 +223,6 @@ public:
     bool isNeedShowFoldIcon(QTextBlock block);
     int  getHighLightRowContentLineNum(int iLine);
     int  getLinePosByLineNum(int iLine);
-    bool ifHasHighlight();
 
     //书签功能相关
     void bookMarkAreaPaintEvent(QPaintEvent *event);
@@ -252,8 +268,6 @@ signals:
     void signal_clearBlack();
     void signal_setTitleFocus();
 
-
-
 public slots:
     void highlightCurrentLine();
     void updateLineNumber();
@@ -294,19 +308,25 @@ public slots:
                               ,QTextEdit::ExtraSelection selection,QString strColor
                               ,QList<QTextEdit::ExtraSelection> *listSelections);
     void onSelectionArea();
+    void onFocusChanged(QWidget *old, QWidget *now);
+    void onTimeout();
+    void onCursorFlashTimeChanged(int msec);
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void inputMethodEvent(QInputMethodEvent *e) override;
+    QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 
     void mousePressEvent(QMouseEvent *e) override;
+    void mouseReleaseEvent(QMouseEvent *e) override;
     void mouseMoveEvent(QMouseEvent *e) override;
     void keyPressEvent(QKeyEvent *e) override;
     void wheelEvent(QWheelEvent *e) override;
     bool eventFilter(QObject *object, QEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
+    void paintEvent(QPaintEvent *e) override;
 
 private:
     bool setCursorKeywordSeletoin(int position, bool findNext);
@@ -319,6 +339,7 @@ private:
     EditWrapper *m_wrapper;
     QPropertyAnimation *m_scrollAnimation;
 
+    QList<QTextEdit::ExtraSelection> m_altModSelections;
     QList<QTextEdit::ExtraSelection> m_findMatchSelections;
     QTextEdit::ExtraSelection m_beginBracketSelection;
     QTextEdit::ExtraSelection m_endBracketSelection;
@@ -379,29 +400,20 @@ private:
  //    QAction *m_colorMarkAction;
     DMenu *m_collapseExpandMenu;
     DMenu *m_colorMarkMenu;
-//    DMenu *m_markCurrentLine;
-//    DMenu *m_markAllLine;
+    DMenu *m_markCurrentLine;
+    DMenu *m_markAllLine;
     QAction *m_cancleMarkCurrentLine;
     QAction *m_cancleMarkAllLine;
     QAction *m_cancleLastMark;
+    QAction *m_actionStyleOne;
+    QAction *m_actionStyleTwo;
+    QAction *m_actionStyleThree;
+    QAction *m_actionStyleFour;
 
-    //颜色选择控件替换下面action 1 2 3 4
-    QWidgetAction *m_actionColorStyles;
-    QAction *m_markCurrentAct;
-//    QAction *m_actionStyleOne;
-//    QAction *m_actionStyleTwo;
-//    QAction *m_actionStyleThree;
-//    QAction *m_actionStyleFour;
-
-     //颜色选择控件替换下面action 1 2 3 4
-    QWidgetAction *m_actionAllColorStyles;
-    QAction *m_markAllAct;
-//    QAction *m_actionAllStyleOne;
-//    QAction *m_actionAllStyleTwo;
-//    QAction *m_actionAllStyleThree;
-//    QAction *m_actionAllStyleFour;
-
-
+    QAction *m_actionAllStyleOne;
+    QAction *m_actionAllStyleTwo;
+    QAction *m_actionAllStyleThree;
+    QAction *m_actionAllStyleFour;
  //    QAction *m_bookmarkAction;
      QAction *m_columnEditACtion;
      QAction *m_addComment;
@@ -487,6 +499,16 @@ private:
 
     int m_cursorStart=-1;
     QString m_textEncode;
+    QPoint m_mouseMoveStart;
+    QPoint m_mouseMoveEnd;
+    bool m_bIsAltMod;
+    QTimer *m_timer;
+    bool m_bIsMousePress;
+    bool m_bIsLinePaint;
+    QList<QPoint> m_listStartPoint;
+    bool m_bIsTimeout;
+    bool m_bIsCursorUpdate = false;
+    CustomLineEditProxyStyle *m_style;
 };
 
 #endif

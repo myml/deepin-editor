@@ -43,13 +43,6 @@
                             "type": "checkbox",
                             "text": "Show line numbers",
                             "default": "true"
-                        },
-                        {
-                            "key": "showblankcharacter",
-                            "name": "Show blank character",
-                            "type": "checkbox",
-                            "text": "Show blank characters",
-                            "default": "false"
                         }
                     ]
                 }
@@ -137,13 +130,13 @@
                         },
                         {
                             "key": "incrementfontsize",
-                            "name": "Increment font size",
+                            "name": "Increase font size",
                             "type": "keySequenceEdit",
                             "default":  "Ctrl+="
                         },
                         {
                             "key": "decrementfontsize",
-                            "name": "Decrement font size",
+                            "name": "Decrease font size",
                             "type": "keySequenceEdit",
                             "default":  "Ctrl+-"
                         },
@@ -221,13 +214,13 @@
                     "options": [
                         {
                             "key": "indentline",
-                            "name": "Increment indent",
+                            "name": "Increase indent",
                             "type": "keySequenceEdit",
                             "default":  "Tab"
                         },
                         {
                             "key": "backindentline",
-                            "name": "Decrement indent",
+                            "name": "Decrease indent",
                             "type": "keySequenceEdit",
                             "default":  "Shift+Backtab"
                         },
