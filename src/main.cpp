@@ -46,7 +46,6 @@ DWIDGET_USE_NAMESPACE
 int main(int argc, char *argv[])
 {
     using namespace Dtk::Core;
-
     EditorApplication app(argc, argv);
     //save theme
     DApplicationSettings savetheme;
