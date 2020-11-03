@@ -2301,6 +2301,12 @@ void Window::keyPressEvent(QKeyEvent *e)
 {
     QString key = Utils::getKeyshortcut(e);
 
+    if (key == Utils::getKeyshortcutFromKeymap(m_settings, "window", "decrementfontsize")
+            || key == Utils::getKeyshortcutFromKeymap(m_settings, "window", "incrementfontsize")
+            || key == Utils::getKeyshortcutFromKeymap(m_settings, "window", "togglefullscreen")) {
+        currentWrapper()->textEditor()->setCodeFoldWidgetHide(true);
+    }
+
     if (key == Utils::getKeyshortcutFromKeymap(m_settings, "window", "addblanktab")) {
         addBlankTab();
     } else if (key == Utils::getKeyshortcutFromKeymap(m_settings, "window", "newwindow")) {
