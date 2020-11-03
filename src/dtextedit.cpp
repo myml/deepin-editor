@@ -4763,7 +4763,8 @@ bool TextEdit::eventFilter(QObject *object, QEvent *event)
 
                     setTextCursor(beginCursor);
                     selection.cursor = textCursor();
-                    selection.format.setBackground(palette().highlight());
+
+                    selection.format.setBackground(DGuiApplicationHelper::instance()->applicationPalette().color(QPalette::Highlight));
                     m_markFoldHighLightSelections.push_back(selection);
 
                     renderAllSelections();
