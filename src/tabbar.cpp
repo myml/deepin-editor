@@ -499,9 +499,10 @@ bool Tabbar::eventFilter(QObject *, QEvent *event)
 }
 
 void Tabbar::mousePressEvent(QMouseEvent *e)
-{
+{    
     if(e->button()==Qt::MidButton)
     {
+        qInfo()<<"midbutton clicked";
         emit tabCloseRequested(tabAt(QPoint(e->x(), e->y())));
     }
     DTabBar::mousePressEvent(e);
