@@ -53,6 +53,12 @@ public:
     void setRequestMenu(bool request);
     DToolButton* getButton();
 
+    /*
+     * 请求菜单
+     * click:是否点击
+     * */
+    void requestMenu(bool click);
+
 public slots:
     void setCurrentAction(QAction*);
     void setCurrentTextOnly(const QString& name);

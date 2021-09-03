@@ -74,7 +74,7 @@ DDropdownMenu::DDropdownMenu(QWidget *parent)
 
     connect(this, &DDropdownMenu::requestContextMenu, [=](bool click)
     {
-        QTimer::singleShot(200,this,[=](){slotRequestMenu(click);});
+        this->requestMenu(click);
     });
 
     //设置字体自适应大小
@@ -226,6 +226,12 @@ DToolButton *DDropdownMenu::getButton()
 {
     return m_pToolButton;
 }
+
+void DDropdownMenu::requestMenu(bool click)
+{
+    QTimer::singleShot(200,this,[=](){slotRequestMenu(click);});
+}
+
 
 DDropdownMenu *DDropdownMenu::createEncodeMenu()
 {
